@@ -1,0 +1,87 @@
+import React, { useMemo, useState } from 'react';
+import { Lottie } from 'lottie-react';
+import { motion } from 'motion/react';
+import type { MascotMood } from '../shared/types';
+import { buildMochiLottieData } from '../shared/mascotLottie';
+
+export type { MascotMood };
+
+interface MascotCompanionProps {
+  mood?: MascotMood;
+  size?: number;
+  message?: string;
+  triggerLabel?: string;
+  onTap?: () => void;
+  className?: string;
+}
+
+const MOOD_ACCENT: Record<MascotMood, string> = {
+  happy: 'border-[#B9FF4B]/30',
+  celebrate: 'border-[#FFD166]/45',
+  caution: 'border-[#FF6B6B]/45',
+  coach: 'border-[#A78BFA]/45',
+};
+
+export const MascotCompanion: React.FC<MascotCompanionProps> = ({
+  mood = 'happy',
+  size = 64,
+  message,
+  triggerLabel,
+  onTap,
+  className = '',
+}) => {
+  const [bounces, setBounces] = useState(0);
+
+  const lottieData = useMemo(() => buildMochiLottieData(mood), [mood]);
+
+  const prefersReduced =
+    typeof window !== 'undefined' &&
+    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+  const handlePress = () => {
+    setBounces((b) => b + 1);
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(12);
+    }
+    onTap?.();
+  };
+
+  return (
+    <div className={`flex items-center gap-3.5 ${className}`}>
+      <motion.button
+        type="button"
+        onClick={handlePress}
+        data-testid="mochi-mascot"
+        data-mascot-mood={mood}
+        aria-label={`Interact with Mochi mascot (${mood})`}
+        animate={{
+          scale: bounces > 0 ? [1, 1.09, 0.95, 1] : 1,
+          rotate: bounces > 0 ? [0, -5, 5, 0] : 0,
+        }}
+        transition={{ duration: 0.35, ease: 'easeOut' }}
+        style={{ width: size, height: size }}
+        className={`relative shrink-0 rounded-2xl overflow-hidden bg-[#11141B] border ${MOOD_ACCENT[mood]} focus-visible:outline-2 focus-visible:outline-[#B9FF4B] cursor-pointer flex items-center justify-center`}
+      >
+        <Lottie
+          key={mood}
+          src={lottieData}
+          loop={!prefersReduced}
+          autoplay={!prefersReduced}
+          style={{ width: size, height: size }}
+          aria-hidden="true"
+        />
+      </motion.button>
+
+      {(message || triggerLabel) && (
+        <div className="min-w-0">
+          {message && <p className="text-sm text-[#C7D0DC] leading-snug">{message}</p>}
+          {triggerLabel && (
+            <p className="text-[11px] font-mono text-[#94A3B8] mt-0.5 truncate">
+              {triggerLabel}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};

@@ -1,0 +1,203 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Instrument Sans", system-ui, -apple-system, sans-serif;
+  --font-sans: "Instrument Sans", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+:root {
+  /* Mintly Calm Light Fintech Design Tokens */
+  --ink: #0E2B2B;
+  --teal-900: #0B3B3A;
+  --teal-800: #14504D;
+  --sage-300: #A9D6B8;
+  --sage-100: #DDEFE3;
+  --cream: #F3EFDC;
+  --white-glass: rgba(255, 255, 255, 0.58);
+  --white-glass-strong: rgba(255, 255, 255, 0.78);
+  --white-border: rgba(255, 255, 255, 0.52);
+  --muted: #6B7F7C;
+  --amber: #E8B64C;
+  --coral: #E26D5C;
+
+  /* Compatibility mappings for existing SVG brand tokens */
+  --mintly-lime: #A9D6B8;
+  --mintly-mint: #6DC397;
+  --mintly-coral: #E26D5C;
+  --mintly-amber: #E8B64C;
+  --mintly-lilac: #8EA8B8;
+  --mintly-sky: #6BB4B2;
+
+  /* Radii & Shadows */
+  --radius-card: 24px;
+  --radius-hero: 28px;
+  --radius-shell: 30px;
+  --radius-pill: 9999px;
+  --blur-glass: 24px;
+
+  --shadow-glass: 0 20px 48px -22px rgba(14, 43, 43, 0.14), 0 4px 14px -4px rgba(14, 43, 43, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  --shadow-card: 0 16px 38px -20px rgba(14, 43, 43, 0.12), 0 2px 8px -2px rgba(14, 43, 43, 0.04);
+  --shadow-teal: 0 24px 48px -18px rgba(11, 59, 58, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  --shadow-nav: 0 18px 42px -12px rgba(14, 43, 43, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    background-color: #F4F7F4;
+    color: var(--ink);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  h1, h2, h3, .font-display {
+    font-family: var(--font-display);
+    text-wrap: balance;
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Soft Atmospheric Drifting Mesh Gradient + Grain Overlay */
+@keyframes mintly-mesh-drift {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(2%, -2%, 0) scale(1.04);
+  }
+}
+
+.mintly-atmosphere-bg {
+  background:
+    radial-gradient(120% 72% at 15% 6%, #FFFFFF 0%, rgba(255, 255, 255, 0.75) 38%, transparent 72%),
+    radial-gradient(95% 70% at 88% 12%, #F6F8F5 0%, transparent 65%),
+    radial-gradient(110% 80% at 30% 48%, rgba(169, 214, 184, 0.48) 0%, rgba(221, 239, 227, 0.35) 48%, transparent 82%),
+    radial-gradient(120% 85% at 72% 88%, rgba(243, 239, 220, 0.92) 0%, rgba(218, 224, 192, 0.55) 55%, transparent 90%),
+    linear-gradient(180deg, #F9FBFA 0%, #E2EFE6 52%, #ECE8D0 100%);
+}
+
+.mintly-atmosphere-drift {
+  animation: mintly-mesh-drift 26s ease-in-out infinite;
+}
+
+.mintly-grain-overlay {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");
+  mix-blend-mode: multiply;
+}
+
+/* Reusable Glass & Editorial Surface Primitives */
+.mintly-glass-shell {
+  background: var(--white-glass);
+  backdrop-filter: blur(var(--blur-glass));
+  -webkit-backdrop-filter: blur(var(--blur-glass));
+  border: 1px solid var(--white-border);
+  box-shadow: var(--shadow-glass);
+}
+
+.mintly-white-card {
+  background: #FFFFFF;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.mintly-teal-card {
+  background: linear-gradient(155deg, #0E4442 0%, #0B3B3A 48%, #072928 100%);
+  border-radius: var(--radius-hero);
+  box-shadow: var(--shadow-teal);
+}
+
+.mintly-card-dot-grid {
+  background-image: radial-gradient(rgba(169, 214, 184, 0.24) 1px, transparent 1px);
+  background-size: 7px 7px;
+}
+
+.mintly-no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.mintly-no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Mochi idle animations */
+@keyframes mintly-mochi-breath {
+  0%, 100% {
+    transform: translateY(0px) scaleY(1);
+  }
+  50% {
+    transform: translateY(-2.5px) scaleY(1.025);
+  }
+}
+
+@keyframes mintly-mochi-sway {
+  0%, 100% {
+    transform: rotate(-5deg);
+  }
+  50% {
+    transform: rotate(5deg);
+  }
+}
+
+@keyframes mintly-mochi-blink {
+  0%, 88%, 100% {
+    transform: scaleY(1);
+  }
+  92% {
+    transform: scaleY(0.12);
+  }
+}
+
+@keyframes mintly-mochi-float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.mintly-mochi-breath {
+  animation: mintly-mochi-breath 2.8s ease-in-out infinite;
+}
+
+.mintly-mochi-sway {
+  animation: mintly-mochi-sway 3s ease-in-out infinite;
+}
+
+.mintly-mochi-blink {
+  animation: mintly-mochi-blink 4.2s ease-in-out infinite;
+}
+
+.mintly-mochi-float {
+  animation: mintly-mochi-float 2.2s ease-in-out infinite;
+}
+
+/* Subtle custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(14, 43, 43, 0.16);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(14, 43, 43, 0.28);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

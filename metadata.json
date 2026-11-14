@@ -1,0 +1,6 @@
+{
+  "name": "Mintly",
+  "description": "A tactile, personality-rich student finance companion for allowance runway, smart budgets, savings vaults, social bill splitting, and grounded AI money coaching.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

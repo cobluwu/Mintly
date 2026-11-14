@@ -1,0 +1,156 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Student user profile and allowance cycle configuration.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "displayName": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "email": { "type": "string", "format": "email", "maxLength": 120 },
+        "university": { "type": "string", "maxLength": 100 },
+        "currency": { "type": "string", "enum": ["USD", "EUR", "GBP", "INR"] },
+        "language": { "type": "string", "enum": ["en", "es", "fr", "hi"] },
+        "allowanceAmountCents": { "type": "integer" },
+        "nextAllowanceIso": { "type": "string", "maxLength": 40 },
+        "cycleDays": { "type": "integer" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["uid", "displayName", "currency", "language", "allowanceAmountCents", "nextAllowanceIso", "cycleDays"]
+    },
+    "FinancialAccount": {
+      "title": "FinancialAccount",
+      "description": "Student bank, wallet, or campus card account.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "name": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "type": { "type": "string", "enum": ["checking", "savings", "campus_card", "cash"] },
+        "currency": { "type": "string", "enum": ["USD", "EUR", "GBP", "INR"] },
+        "balanceCents": { "type": "integer" },
+        "institution": { "type": "string", "maxLength": 60 },
+        "lastFour": { "type": "string", "maxLength": 4 },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "ownerId", "name", "type", "currency", "balanceCents"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Immutable-audit financial transaction record in minor units.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 80, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "accountId": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "type": { "type": "string", "enum": ["expense", "income", "transfer"] },
+        "status": { "type": "string", "enum": ["pending", "posted", "reversed", "failed"] },
+        "amountCents": { "type": "integer" },
+        "currency": { "type": "string", "enum": ["USD", "EUR", "GBP", "INR"] },
+        "category": { "type": "string", "enum": ["dining", "groceries", "transport", "textbooks", "subscriptions", "fun", "rent", "income", "savings"] },
+        "merchant": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "note": { "type": "string", "maxLength": 240 },
+        "occurredAtUtc": { "type": "string", "maxLength": 40 },
+        "idempotencyKey": { "type": "string", "maxLength": 120 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "ownerId", "accountId", "type", "status", "amountCents", "currency", "category", "merchant", "occurredAtUtc"]
+    },
+    "BudgetPlan": {
+      "title": "BudgetPlan",
+      "description": "Monthly spending allocation per category.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "category": { "type": "string", "enum": ["dining", "groceries", "transport", "textbooks", "subscriptions", "fun", "rent"] },
+        "limitCents": { "type": "integer" },
+        "currency": { "type": "string", "enum": ["USD", "EUR", "GBP", "INR"] },
+        "monthKey": { "type": "string", "maxLength": 10 },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "ownerId", "category", "limitCents", "currency", "monthKey"]
+    },
+    "SavingsVault": {
+      "title": "SavingsVault",
+      "description": "Goal-oriented student savings vault with contribution tracking.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "title": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "artworkKey": { "type": "string", "enum": ["laptop", "trip", "emergency"] },
+        "targetCents": { "type": "integer" },
+        "savedCents": { "type": "integer" },
+        "weeklyAutoCents": { "type": "integer" },
+        "currency": { "type": "string", "enum": ["USD", "EUR", "GBP", "INR"] },
+        "targetDateIso": { "type": "string", "maxLength": 40 },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "ownerId", "title", "artworkKey", "targetCents", "savedCents", "currency"]
+    },
+    "RecurringRule": {
+      "title": "RecurringRule",
+      "description": "Scheduled recurring bill or allowance income.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "title": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "type": { "type": "string", "enum": ["expense", "income"] },
+        "category": { "type": "string" },
+        "amountCents": { "type": "integer" },
+        "currency": { "type": "string", "enum": ["USD", "EUR", "GBP", "INR"] },
+        "cadence": { "type": "string", "enum": ["weekly", "monthly"] },
+        "nextDueIso": { "type": "string", "maxLength": 40 },
+        "active": { "type": "boolean" }
+      },
+      "required": ["id", "ownerId", "title", "type", "amountCents", "currency", "cadence", "nextDueIso", "active"]
+    },
+    "ExpenseCircle": {
+      "title": "ExpenseCircle",
+      "description": "Social group expense sharing circle with split ledger.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "name": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "themeColor": { "type": "string", "maxLength": 20 },
+        "currency": { "type": "string", "enum": ["USD", "EUR", "GBP", "INR"] },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "ownerId", "name", "currency"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Primary student profile and allowance runway settings."
+    },
+    "/users/{userId}/accounts/{accountId}": {
+      "schema": { "$ref": "#/entities/FinancialAccount" },
+      "description": "User financial accounts."
+    },
+    "/users/{userId}/transactions/{transactionId}": {
+      "schema": { "$ref": "#/entities/Transaction" },
+      "description": "User transaction ledger."
+    },
+    "/users/{userId}/budgets/{budgetId}": {
+      "schema": { "$ref": "#/entities/BudgetPlan" },
+      "description": "User category budget plans."
+    },
+    "/users/{userId}/vaults/{vaultId}": {
+      "schema": { "$ref": "#/entities/SavingsVault" },
+      "description": "User savings vaults."
+    },
+    "/users/{userId}/recurring/{ruleId}": {
+      "schema": { "$ref": "#/entities/RecurringRule" },
+      "description": "User recurring income and bills."
+    },
+    "/users/{userId}/circles/{circleId}": {
+      "schema": { "$ref": "#/entities/ExpenseCircle" },
+      "description": "User expense sharing circles."
+    }
+  }
+}
