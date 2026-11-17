@@ -18,37 +18,37 @@ export const MOCHI_POSE_META: Record<
   happy: {
     label: 'Happy',
     caption: 'Breezing through the week',
-    accent: 'var(--mintly-lime, #B9FF4B)',
+    accent: 'var(--sage-300, #A9D6B8)',
   },
   chill: {
     label: 'Chill',
     caption: 'Ahead of pace · Zero stress',
-    accent: 'var(--mintly-mint, #34D399)',
+    accent: 'var(--sage-400, #6DC397)',
   },
   worried: {
     label: 'Worried',
     caption: 'Over budget · Time to pause',
-    accent: 'var(--mintly-coral, #FF6B6B)',
+    accent: 'var(--coral, #E26D5C)',
   },
   celebrating: {
     label: 'Celebrating',
     caption: 'Vault milestone smashed!',
-    accent: 'var(--mintly-amber, #FFD166)',
+    accent: 'var(--amber, #E8B64C)',
   },
   thinking: {
     label: 'Thinking',
     caption: 'Crunching your safe spend...',
-    accent: 'var(--mintly-lilac, #A78BFA)',
+    accent: 'var(--mintly-lilac, #8EA8B8)',
   },
   sleeping: {
     label: 'Sleeping',
     caption: 'Quiet night / empty state',
-    accent: 'var(--mintly-sky, #38BDF8)',
+    accent: 'var(--mintly-sky, #6BB4B2)',
   },
   proud: {
     label: 'Proud',
     caption: 'Goal 100% funded!',
-    accent: 'var(--mintly-amber, #FFD166)',
+    accent: 'var(--amber, #E8B64C)',
   },
 };
 
@@ -105,7 +105,7 @@ export const MochiMascot: React.FC<MochiMascotProps> = ({
       transition={SPRING_BOUNCY}
       style={{ width: size, height: size }}
       className={`inline-flex items-center justify-center relative shrink-0 select-none ${
-        interactive ? 'cursor-pointer focus-visible:outline-2 focus-visible:outline-[#B9FF4B] rounded-3xl' : ''
+        interactive ? 'cursor-pointer focus-visible:outline-2 focus-visible:outline-[var(--teal-900)] rounded-3xl' : ''
       } ${className}`}
     >
       <svg
@@ -147,17 +147,17 @@ export const MochiMascot: React.FC<MochiMascotProps> = ({
           >
             <path
               d="M60 27C60 22 61 18 61 18"
-              stroke="var(--mintly-lime, #B9FF4B)"
+              stroke="var(--sage-300, #A9D6B8)"
               strokeWidth="3.2"
               strokeLinecap="round"
             />
             <path
               d="M60 19C54 12 45 14 47 21C49 25 56 23 60 19Z"
-              fill="#96DF2C"
+              fill="#6DC397"
             />
             <path
               d="M61 19C66 11 76 13 74 20C72 24 65 23 61 19Z"
-              fill="var(--mintly-lime, #B9FF4B)"
+              fill="var(--sage-300, #A9D6B8)"
             />
           </g>
 
@@ -497,9 +497,9 @@ export const MochiMascot: React.FC<MochiMascotProps> = ({
             <circle cx="88" cy="24" r="7" fill="var(--mintly-amber, #FFD166)" />
             <path d="M88 20.5V27.5" stroke="#090B0E" strokeWidth="2" strokeLinecap="round" />
             {/* Confetti shapes */}
-            <rect x="20" y="26" width="6" height="6" rx="2" transform="rotate(20 20 26)" fill="var(--mintly-lime, #B9FF4B)" />
-            <circle cx="102" cy="40" r="3.5" fill="var(--mintly-lilac, #A78BFA)" />
-            <circle cx="24" cy="44" r="3" fill="var(--mintly-coral, #FF6B6B)" />
+            <rect x="20" y="26" width="6" height="6" rx="2" transform="rotate(20 20 26)" fill="var(--sage-300, #A9D6B8)" />
+            <circle cx="102" cy="40" r="3.5" fill="var(--mintly-lilac, #8EA8B8)" />
+            <circle cx="24" cy="44" r="3" fill="var(--coral, #E26D5C)" />
           </g>
         )}
 

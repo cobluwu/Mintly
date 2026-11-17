@@ -92,7 +92,7 @@ export async function parseRawImportToTransactions(params: {
   if (ai) {
     try {
       const geminiPromise = ai.models.generateContent({
-        model: 'gemini-4-hydrogen',
+        model: 'gemini-3-flash-preview',
         contents: `Parse these Indian bank/UPI SMS alerts or CSV lines into structured INR transactions:\n\n${trimmed}`,
         config: {
           thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },

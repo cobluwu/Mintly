@@ -91,10 +91,14 @@ export const CoachView: React.FC<CoachViewProps> = ({
     setInput('');
     setLoading(true);
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
+
     try {
       const res = await fetch('/api/v1/coach/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           question: trimmed,
           workspace,
@@ -117,8 +121,13 @@ export const CoachView: React.FC<CoachViewProps> = ({
       };
       setMessages((prev) => [...prev, botMsg]);
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Unable to reach Mochi Coach');
+      if (err instanceof Error && err.name === 'AbortError') {
+        setErrorMsg('Mochi took too long to respond. Please tap again.');
+      } else {
+        setErrorMsg(err instanceof Error ? err.message : 'Unable to reach Mochi Coach');
+      }
     } finally {
+      clearTimeout(timeoutId);
       setLoading(false);
     }
   };

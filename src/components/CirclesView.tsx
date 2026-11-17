@@ -1,5 +1,13 @@
-import React, { useState } from 'react';
-import { ArrowRight, CheckCircle2, MessageCircle, Plus, Smartphone } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { motion } from 'motion/react';
+import {
+  ArrowRight,
+  CheckCircle2,
+  MessageCircle,
+  Plus,
+  Smartphone,
+  Users,
+} from 'lucide-react';
 import type { CircleDebtTransfer, MintlyWorkspaceState, SplitMode } from '../shared/types';
 import type { TranslationBundle } from '../shared/i18n';
 import {
@@ -8,13 +16,28 @@ import {
   fmtINR,
   formatDateDDMMM,
 } from '../shared/finance';
-import { triggerHaptic } from '../shared/motion';
+import { STAGGER_CONTAINER, STAGGER_ITEM, triggerHaptic } from '../shared/motion';
+import {
+  AvatarStack,
+  Chip,
+  EmptyState,
+  IconBadge,
+  IllustratedAvatar,
+  PageHeader,
+  Pill,
+  SectionHeader,
+  StatBlock,
+  TealFeatureCard,
+  WhiteCard,
+} from './ui';
+import type { MochiPoseMood } from './brand/MochiMascot';
 
 interface CirclesViewProps {
   workspace: MintlyWorkspaceState;
   t: TranslationBundle;
   onOpenAddSplit: (circleId: string) => void;
   onSettleTransfer: (circleId: string, transfer: CircleDebtTransfer) => void;
+  onOpenSettings?: () => void;
 }
 
 const SPLIT_MODE_LABEL: Record<SplitMode, string> = {
@@ -29,6 +52,7 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
   t,
   onOpenAddSplit,
   onSettleTransfer,
+  onOpenSettings,
 }) => {
   const [selectedCircleId, setSelectedCircleId] = useState<string>(
     workspace.circles[0]?.id || ''
@@ -37,10 +61,31 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
   const activeCircle =
     workspace.circles.find((c) => c.id === selectedCircleId) || workspace.circles[0];
 
+  const circleOptions = useMemo(
+    () =>
+      workspace.circles.map((circle) => {
+        const words = circle.name.trim().split(/\s+/);
+        const shortLabel =
+          circle.name.length <= 12
+            ? circle.name
+            : words.slice(0, 2).join(' ').slice(0, 12);
+        return {
+          value: circle.id,
+          label: shortLabel,
+        };
+      }),
+    [workspace.circles]
+  );
+
   if (!activeCircle) {
     return (
-      <div className="rounded-3xl bg-[#13161C] border border-white/[0.08] p-8 text-center text-sm text-[#94A3B8]">
-        No circles yet.
+      <div className="space-y-5">
+        <EmptyState
+          mood="chill"
+          accessory={workspace.rewards?.equippedAccessoryId}
+          title="No circles yet"
+          description="Create a hostel, trip, or study-squad split circle to track shared chai, cabs, and mess bills."
+        />
       </div>
     );
   }
@@ -48,119 +93,217 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
   const settlement = computeCircleSettlements(activeCircle);
   const memberById = new Map(activeCircle.members.map((m) => [m.id, m]));
   const selfMember = activeCircle.members.find((m) => m.isSelf);
+  const selfNetCents = selfMember ? (settlement.netBalances[selfMember.id] ?? 0) : 0;
   const primarySettleTransfer =
     settlement.transfers.find(
       (tr) => tr.fromMemberId === selfMember?.id || tr.toMemberId === selfMember?.id
     ) ?? settlement.transfers[0];
 
+  const mochiMood: MochiPoseMood =
+    settlement.transfers.length === 0
+      ? 'celebrating'
+      : selfNetCents < 0
+        ? 'thinking'
+        : 'happy';
+
+  const heroCaption =
+    selfNetCents > 0
+      ? 'Net owed to you'
+      : selfNetCents < 0
+        ? 'Your net share owed'
+        : 'Your circle balance';
+
+  const heroStatusBadge =
+    selfNetCents > 0
+      ? 'Owed to you'
+      : selfNetCents < 0
+        ? 'You owe'
+        : 'All settled';
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-white">
-          {t.circles.title}
-        </h1>
-        <button
-          type="button"
-          onClick={() => onOpenAddSplit(activeCircle.id)}
-          className="min-h-[44px] px-4 py-2 rounded-xl bg-[#B9FF4B] hover:bg-[#c8ff70] text-[#0B0D10] text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>{t.circles.addSplit}</span>
-        </button>
-      </div>
+    <motion.div
+      variants={STAGGER_CONTAINER}
+      initial="hidden"
+      animate="show"
+      className="space-y-5"
+    >
+      {/* Shared PageHeader matching Home */}
+      <PageHeader
+        layoutId="circles-group-toggle"
+        title={t.circles.title}
+        subtitle={`${activeCircle.members.length} members · Pool total ${fmtINR(settlement.totalSpendCents)}`}
+        value={activeCircle.id}
+        onChange={setSelectedCircleId}
+        options={
+          circleOptions.length > 0
+            ? circleOptions
+            : [{ value: activeCircle.id, label: activeCircle.name }]
+        }
+        mochiMood={mochiMood}
+        mochiAccessory={workspace.rewards?.equippedAccessoryId}
+        onAvatarClick={() => onOpenSettings?.()}
+        titleRightAction={
+          <Pill
+            variant="ink"
+            size="md"
+            icon={<Plus className="w-4 h-4" />}
+            onClick={() => onOpenAddSplit(activeCircle.id)}
+          >
+            {t.circles.addSplit}
+          </Pill>
+        }
+      />
 
-      {/* Group selector tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1">
-        {workspace.circles.map((circle) => {
-          const active = circle.id === activeCircle.id;
-          return (
-            <button
-              key={circle.id}
-              type="button"
-              onClick={() => setSelectedCircleId(circle.id)}
-              className={`min-h-[44px] px-4 py-2 rounded-2xl text-xs font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer border ${
-                active
-                  ? 'bg-[#1F242E] text-white border-[#B9FF4B]/60'
-                  : 'bg-[#13161C] text-[#94A3B8] border-white/[0.07] hover:text-white'
-              }`}
-            >
-              {circle.name} · {circle.members.length}
-            </button>
-          );
-        })}
-      </div>
+      {/* L3 Deep Teal Feature Hero: Net Circle Position & Member Stack */}
+      <motion.div variants={STAGGER_ITEM}>
+        <TealFeatureCard ariaLabel={`${activeCircle.name} net summary`} className="space-y-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="space-y-1.5 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-[13px] font-medium text-white/80">{heroCaption}</p>
+                <span
+                  className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium border ${
+                    selfNetCents < 0
+                      ? 'bg-[var(--coral)]/20 border-[var(--coral)]/40 text-[#FFD9D3]'
+                      : 'bg-[var(--sage-300)]/20 border-[var(--sage-300)]/35 text-[var(--sage-100)]'
+                  }`}
+                >
+                  {heroStatusBadge}
+                </span>
+              </div>
 
-      <div className="grid grid-cols-1 gap-5">
-        {/* Members & Who Owes Whom */}
-        <section className="rounded-3xl bg-[#13161C] border border-white/[0.08] p-5 space-y-5">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <h2 className="font-display text-lg font-bold text-white">
-                {t.circles.whoOwesWhom}
-              </h2>
-              <p className="text-xs text-[#94A3B8] font-mono tabular-nums mt-0.5">
-                Pool total: {fmtINR(settlement.totalSpendCents)}
+              <StatBlock
+                label=""
+                valueCents={Math.abs(selfNetCents)}
+                tone="dark"
+                size="lg"
+                className="[&>p:first-child]:hidden"
+              />
+            </div>
+
+            <div className="shrink-0 pt-0.5">
+              <AvatarStack members={activeCircle.members} max={4} size={34} />
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-white/12 flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[11px] uppercase tracking-[0.06em] text-white/65">
+                {activeCircle.name}
+              </p>
+              <p className="text-xs text-white/85 font-mono tabular-nums mt-0.5">
+                Pool {fmtINR(settlement.totalSpendCents)} · {activeCircle.expenses.length} splits
               </p>
             </div>
 
             {primarySettleTransfer && (
-              <button
-                type="button"
+              <Pill
+                variant="sage"
+                size="md"
+                icon={<Smartphone className="w-4 h-4" />}
                 onClick={() => {
                   triggerHaptic(8);
                   onSettleTransfer(activeCircle.id, primarySettleTransfer);
                 }}
-                className="min-h-[40px] px-3.5 rounded-xl bg-white/[0.06] hover:bg-[#B9FF4B]/20 text-xs font-semibold text-[#B9FF4B] inline-flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
               >
-                <Smartphone className="w-3.5 h-3.5" />
-                <span>{t.circles.settleUp} UPI</span>
-              </button>
+                {t.circles.settleUp} UPI
+              </Pill>
             )}
           </div>
+        </TealFeatureCard>
+      </motion.div>
 
-          {/* Member Avatar Strip */}
-          <div className="flex flex-wrap gap-3">
-            {activeCircle.members.map((m) => {
+      {/* Member Balances Card (L2 WhiteCard) */}
+      <motion.div variants={STAGGER_ITEM}>
+        <WhiteCard ariaLabel="Circle member balances" className="space-y-3.5">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-sm font-medium text-[var(--ink)]">Squad Balances</h2>
+            <span className="text-xs font-mono text-[var(--muted)] tabular-nums">
+              {activeCircle.members.length} in circle
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2.5">
+            {activeCircle.members.map((m, idx) => {
               const net = settlement.netBalances[m.id] ?? 0;
+              const statusTone =
+                net > 0
+                  ? 'text-[#15694B]'
+                  : net < 0
+                    ? 'text-[var(--coral-ink)]'
+                    : 'text-[var(--muted)]';
+              const roleLabel =
+                net > 0
+                  ? m.isSelf
+                    ? 'Owed to you'
+                    : 'Gets back'
+                  : net < 0
+                    ? m.isSelf
+                      ? 'You owe'
+                      : 'Owes pool'
+                    : 'Settled';
+
               return (
                 <div
                   key={m.id}
-                  className="flex items-center gap-2.5 pr-3 py-1.5 rounded-2xl bg-white/[0.03]"
+                  className="flex items-center gap-2.5 p-2.5 rounded-[16px] bg-[var(--surface-subtle)] border border-[var(--ink)]/[0.04] min-w-0"
                 >
-                  <div
-                    style={{ backgroundColor: m.color }}
-                    className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-extrabold text-[#0B0D10]"
-                  >
-                    {m.initials}
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-white">{m.name}</p>
-                    <p
-                      className={`text-[11px] font-mono tabular-nums ${
-                        net > 0
-                          ? 'text-[#B9FF4B]'
-                          : net < 0
-                            ? 'text-[#FF6B6B]'
-                            : 'text-[#94A3B8]'
-                      }`}
-                    >
-                      {net === 0 ? 'Settled' : fmtINR(net, { sign: true })}
+                  <IllustratedAvatar member={m} index={idx} size={36} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-semibold text-[var(--ink)] truncate">
+                      {m.isSelf && !m.name.includes('(You)') ? `${m.name} (You)` : m.name}
                     </p>
+                    <p className={`text-[11px] font-mono tabular-nums font-medium ${statusTone}`}>
+                      {net === 0 ? 'Settled' : `${fmtINR(net, { sign: true })}`}
+                    </p>
+                    <p className="text-[10px] text-[var(--muted)] truncate">{roleLabel}</p>
                   </div>
                 </div>
               );
             })}
           </div>
+        </WhiteCard>
+      </motion.div>
 
-          {/* Simplified Debt Transfers with UPI Settle + WhatsApp Remind */}
-          <div className="pt-3 border-t border-white/[0.07] space-y-2.5">
-            {settlement.transfers.length === 0 ? (
-              <div className="flex items-center gap-2 text-sm text-[#34D399] py-2">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>{t.circles.allSettled}</span>
+      {/* Simplified Debt Transfers Card (L2 WhiteCard) */}
+      <motion.div variants={STAGGER_ITEM} className="space-y-2.5">
+        <SectionHeader
+          title={t.circles.whoOwesWhom}
+          rightSlot={
+            <Chip
+              variant={settlement.transfers.length === 0 ? 'sage' : 'amber'}
+              label={
+                settlement.transfers.length === 0
+                  ? 'All settled'
+                  : `${settlement.transfers.length} pending`
+              }
+            />
+          }
+        />
+
+        <WhiteCard ariaLabel={t.circles.whoOwesWhom} className="space-y-3">
+          {settlement.transfers.length === 0 ? (
+            <div className="flex items-center gap-3 py-1">
+              <IconBadge
+                icon={<CheckCircle2 className="w-5 h-5" />}
+                tone="sage"
+                size="md"
+                shape="circle"
+              />
+              <div>
+                <p className="text-sm font-medium text-[var(--ink)]">{t.circles.allSettled}</p>
+                <p className="text-xs text-[var(--muted)] mt-0.5">
+                  Every chai, cab, and group split is squared up.
+                </p>
               </div>
-            ) : (
-              settlement.transfers.map((tr, idx) => {
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {settlement.transfers.map((tr, idx) => {
+                const fromMember = memberById.get(tr.fromMemberId);
+                const toMember = memberById.get(tr.toMemberId);
+                const fromInvolvesSelf = tr.fromMemberId === selfMember?.id;
+                const toInvolvesSelf = tr.toMemberId === selfMember?.id;
                 const whatsappHref = buildWhatsAppRemindUrl({
                   phone: tr.fromPhone,
                   fromName: tr.fromName,
@@ -170,25 +313,62 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
                   toUpiId: tr.toUpiId,
                 });
 
+                const directionTag = fromInvolvesSelf
+                  ? 'You owe'
+                  : toInvolvesSelf
+                    ? 'Owes you'
+                    : 'Transfer';
+
                 return (
                   <div
                     key={`${tr.fromMemberId}-${tr.toMemberId}-${idx}`}
-                    className="p-3 rounded-2xl bg-white/[0.03] border border-white/[0.05] space-y-2.5"
+                    className="p-3.5 rounded-[18px] bg-[var(--surface-subtle)] border border-[var(--ink)]/[0.05] space-y-3"
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5 text-xs text-[#E2E8F0]">
-                          <span className="font-semibold text-white truncate">{tr.fromName}</span>
-                          <ArrowRight className="w-3.5 h-3.5 text-[#94A3B8] shrink-0" />
-                          <span className="font-semibold text-white truncate">{tr.toName}</span>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="inline-flex items-center -space-x-2 shrink-0">
+                          {fromMember && (
+                            <IllustratedAvatar member={fromMember} index={idx} size={32} />
+                          )}
+                          {toMember && (
+                            <IllustratedAvatar member={toMember} index={idx + 1} size={32} />
+                          )}
                         </div>
-                        {tr.toUpiId && (
-                          <p className="text-[10px] font-mono text-[#94A3B8] truncate mt-0.5">
-                            UPI: {tr.toUpiId}
-                          </p>
-                        )}
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 text-[13px] font-medium text-[var(--ink)]">
+                            <span className="truncate">{tr.fromName}</span>
+                            <ArrowRight className="w-3.5 h-3.5 text-[var(--muted)] shrink-0" />
+                            <span className="truncate">{tr.toName}</span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                            <Chip
+                              variant={
+                                fromInvolvesSelf
+                                  ? 'coral'
+                                  : toInvolvesSelf
+                                    ? 'sage'
+                                    : 'neutral'
+                              }
+                              label={directionTag}
+                            />
+                            {tr.toUpiId && (
+                              <span className="text-[11px] font-mono text-[var(--muted)] truncate">
+                                {tr.toUpiId}
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      <span className="font-mono text-sm font-bold text-[#FFD166] tabular-nums shrink-0">
+
+                      <span
+                        className={`font-mono text-[15px] font-semibold tabular-nums shrink-0 ${
+                          fromInvolvesSelf
+                            ? 'text-[var(--coral-ink)]'
+                            : toInvolvesSelf
+                              ? 'text-[#15694B]'
+                              : 'text-[var(--ink)]'
+                        }`}
+                      >
                         {fmtINR(tr.amountCents)}
                       </span>
                     </div>
@@ -199,37 +379,57 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label={`Remind ${tr.fromName} on WhatsApp for ${fmtINR(tr.amountCents)}`}
-                        className="min-h-[34px] px-3 rounded-full bg-white/[0.06] hover:bg-[#25D366]/20 text-[11px] font-semibold text-[#CBD5E1] hover:text-[#6EE7B7] inline-flex items-center gap-1.5 transition-colors"
+                        onClick={() => triggerHaptic(6)}
+                        className="min-h-[44px] px-3.5 rounded-full bg-white border border-[var(--ink)]/14 hover:bg-[var(--sage-100)]/60 text-xs font-medium text-[var(--ink)] inline-flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0"
                       >
-                        <MessageCircle className="w-3.5 h-3.5" />
+                        <MessageCircle className="w-3.5 h-3.5 text-[#15694B]" />
                         <span>Remind</span>
                       </a>
 
-                      <button
-                        type="button"
-                        aria-label={`Settle ${tr.fromName} to ${tr.toName} ${fmtINR(tr.amountCents)} via UPI`}
+                      <Pill
+                        variant="ink"
+                        size="md"
+                        icon={<Smartphone className="w-3.5 h-3.5" />}
+                        ariaLabel={`Settle ${tr.fromName} to ${tr.toName} ${fmtINR(tr.amountCents)} via UPI`}
                         onClick={() => {
                           triggerHaptic(8);
                           onSettleTransfer(activeCircle.id, tr);
                         }}
-                        className="min-h-[34px] px-3.5 rounded-full bg-[#B9FF4B] hover:bg-[#c8ff70] text-[11px] font-bold text-[#0B0D10] inline-flex items-center gap-1.5 transition-colors cursor-pointer"
                       >
-                        <Smartphone className="w-3.5 h-3.5" />
-                        <span>{t.circles.settleUp}</span>
-                      </button>
+                        {t.circles.settleUp}
+                      </Pill>
                     </div>
                   </div>
                 );
-              })
-            )}
-          </div>
-        </section>
+              })}
+            </div>
+          )}
+        </WhiteCard>
+      </motion.div>
 
-        {/* Group Expense Feed */}
-        <section className="rounded-3xl bg-[#13161C] border border-white/[0.08] p-5 space-y-3">
-          <h2 className="font-display text-lg font-bold text-white">Shared Ledger</h2>
-          <div className="divide-y divide-white/[0.06]">
-            {activeCircle.expenses.map((exp) => {
+      {/* Shared Ledger Feed (L2 WhiteCard with hairline dividers) */}
+      <motion.div variants={STAGGER_ITEM} className="space-y-2.5">
+        <SectionHeader
+          title="Shared Ledger"
+          rightSlot={
+            <span className="text-xs font-mono text-[var(--muted)] tabular-nums">
+              {activeCircle.expenses.length} entries
+            </span>
+          }
+        />
+
+        {activeCircle.expenses.length === 0 ? (
+          <EmptyState
+            mood="happy"
+            accessory={workspace.rewards?.equippedAccessoryId}
+            title="No shared expenses yet"
+            description="Add a group split to automatically simplify who owes whom."
+            actionLabel={t.circles.addSplit}
+            onAction={() => onOpenAddSplit(activeCircle.id)}
+          />
+        ) : (
+          <WhiteCard noPadding divideY ariaLabel="Shared Ledger">
+            {activeCircle.expenses.map((exp, idx) => {
               const payer = memberById.get(exp.paidByMemberId);
               const splitLabel = exp.settledRef
                 ? 'UPI Paid'
@@ -241,33 +441,60 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
                   : null;
 
               return (
-                <div key={exp.id} className="py-3.5 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p
-                        className={`text-sm font-semibold truncate ${
-                          exp.settled ? 'line-through text-[#64748B]' : 'text-white'
-                        }`}
-                      >
-                        {exp.title}
+                <div
+                  key={exp.id}
+                  className="px-4 py-3.5 flex items-center justify-between gap-3"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    {exp.settledRef ? (
+                      <IconBadge
+                        icon={<CheckCircle2 className="w-4 h-4" />}
+                        tone="sage"
+                        size="md"
+                        shape="circle"
+                      />
+                    ) : payer ? (
+                      <IllustratedAvatar member={payer} index={idx} size={38} />
+                    ) : (
+                      <IconBadge
+                        icon={<Users className="w-4 h-4" />}
+                        tone="neutral"
+                        size="md"
+                        shape="circle"
+                      />
+                    )}
+
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p
+                          className={`text-[14px] font-medium truncate ${
+                            exp.settled
+                              ? 'line-through text-[var(--muted)]'
+                              : 'text-[var(--ink)]'
+                          }`}
+                        >
+                          {exp.title}
+                        </p>
+                        <Chip
+                          variant={exp.settledRef ? 'sage' : 'neutral'}
+                          label={splitLabel}
+                        />
+                      </div>
+                      <p className="text-xs text-[var(--muted)] mt-0.5 leading-relaxed">
+                        {exp.settledRef
+                          ? `${payer?.name || 'Member'} -> ${memberById.get(exp.splitBetweenIds[0])?.name || 'Member'}`
+                          : `Paid by ${payer?.name || 'Member'} · Split ${exp.splitBetweenIds.length} ways`}
+                        <span aria-hidden="true"> · </span>
+                        {formatDateDDMMM(exp.occurredAtUtc)}
+                        {selfShareCents !== null ? ` · Your share ${fmtINR(selfShareCents)}` : ''}
+                        {exp.settled ? ' · Settled' : ''}
                       </p>
-                      <span className="px-2 py-0.5 rounded-full bg-white/[0.07] text-[10px] font-medium text-[#CBD5E1] shrink-0">
-                        {splitLabel}
-                      </span>
                     </div>
-                    <p className="text-xs text-[#94A3B8] mt-0.5">
-                      {exp.settledRef
-                        ? `${payer?.name || 'Member'} -> ${memberById.get(exp.splitBetweenIds[0])?.name || 'Member'}`
-                        : `Paid by ${payer?.name || 'Member'} · Split ${exp.splitBetweenIds.length} ways`}
-                      <span aria-hidden="true"> · </span>
-                      {formatDateDDMMM(exp.occurredAtUtc)}
-                      {selfShareCents !== null ? ` · Your share ${fmtINR(selfShareCents)}` : ''}
-                      {exp.settled ? ' · Settled' : ''}
-                    </p>
                   </div>
+
                   <span
-                    className={`font-mono text-sm font-bold tabular-nums shrink-0 ${
-                      exp.settledRef ? 'text-[#34D399]' : 'text-white'
+                    className={`font-mono text-sm font-semibold tabular-nums shrink-0 ${
+                      exp.settledRef ? 'text-[#15694B]' : 'text-[var(--ink)]'
                     }`}
                   >
                     {fmtINR(exp.amountCents)}
@@ -275,9 +502,9 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
                 </div>
               );
             })}
-          </div>
-        </section>
-      </div>
-    </div>
+          </WhiteCard>
+        )}
+      </motion.div>
+    </motion.div>
   );
 };

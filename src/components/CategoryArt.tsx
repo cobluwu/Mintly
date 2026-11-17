@@ -1,6 +1,7 @@
 import React from 'react';
 import type { SpendingCategory } from '../shared/types';
-import { Icon, type MintlyIconName } from './brand/Icon';
+import { type MintlyIconName } from './brand/Icon';
+import { IconBadge, type IconBadgeTone } from './ui/IconBadge';
 
 export const CATEGORY_STYLE: Record<
   SpendingCategory,
@@ -86,29 +87,27 @@ export const CATEGORY_STYLE: Record<
   },
 };
 
+const BG_TO_TONE: Record<string, IconBadgeTone> = {
+  '#DDEFE3': 'sage',
+  '#A9D6B8': 'sage',
+  '#F3EFDC': 'cream',
+  '#E8ECEA': 'neutral',
+};
+
 export const CategoryGlyph: React.FC<{
   category: SpendingCategory;
   size?: number;
 }> = ({ category, size = 42 }) => {
   const style = CATEGORY_STYLE[category] ?? CATEGORY_STYLE.dining;
+  const tone: IconBadgeTone = BG_TO_TONE[style.bg] ?? 'cream';
+  const badgeSize = size <= 34 ? 'sm' : size <= 42 ? 'md' : size <= 48 ? 'lg' : 'xl';
 
   return (
-    <div
-      style={{
-        width: size,
-        height: size,
-        backgroundColor: style.bg,
-        color: style.color,
-      }}
-      className="rounded-full flex items-center justify-center shrink-0"
-      aria-hidden="true"
-    >
-      <Icon
-        name={style.icon}
-        size={Math.round(size * 0.48)}
-        color={style.color}
-        accentColor="#0B3B3A"
-      />
-    </div>
+    <IconBadge
+      name={style.icon}
+      tone={tone}
+      size={badgeSize}
+      shape="circle"
+    />
   );
 };

@@ -120,8 +120,8 @@ const ENGLISH_BUNDLE: TranslationBundle = {
     },
   },
   activity: {
-    title: 'Activity Journal',
-    searchPlaceholder: 'Search merchants, UPI refs or notes...',
+    title: 'Activity',
+    searchPlaceholder: 'Search merchant, UPI or note...',
     all: 'All',
     expenses: 'Expenses',
     income: 'Income',
@@ -225,8 +225,8 @@ const HINGLISH_BUNDLE: TranslationBundle = {
     },
   },
   activity: {
-    title: 'Activity Journal',
-    searchPlaceholder: 'Merchant, UPI ref ya note search karo...',
+    title: 'Activity',
+    searchPlaceholder: 'Merchant, UPI ya note search...',
     all: 'Sab',
     expenses: 'Kharch',
     income: 'Income',

@@ -15,7 +15,7 @@ export const LOGO_CONCEPT_META: Record<
 > = {
   A: {
     title: 'Concept A · Leaf-Coin',
-    subtitle: 'Playful mint leaf cradling a glowing lime coin',
+    subtitle: 'Playful mint leaf cradling a sage-cream coin',
   },
   B: {
     title: 'Concept B · Monogram M',
@@ -69,12 +69,12 @@ export const MintlyLogomark: React.FC<LogomarkProps> = ({
             strokeWidth="2.2"
             strokeLinecap="round"
           />
-          {/* Glossy lime coin nested on leaf */}
+          {/* Glossy sage coin nested on leaf */}
           <motion.circle
             cx="21.5"
             cy="21.5"
             r="9.5"
-            fill="var(--mintly-lime, #B9FF4B)"
+            fill="var(--sage-300, #A9D6B8)"
             stroke="#090B0E"
             strokeOpacity="0.25"
             strokeWidth="1.5"
@@ -116,7 +116,7 @@ export const MintlyLogomark: React.FC<LogomarkProps> = ({
             width="30"
             height="30"
             rx="11"
-            fill="var(--mintly-lime, #B9FF4B)"
+            fill="var(--sage-300, #A9D6B8)"
             initial={animateOnLoad ? { scale: 0.78, rotate: -8 } : false}
             animate={{ scale: 1, rotate: 0 }}
             transition={SPRING_BOUNCY}
@@ -148,12 +148,12 @@ export const MintlyLogomark: React.FC<LogomarkProps> = ({
             animate={{ rotate: 0, scale: 1 }}
             transition={SPRING_BOUNCY}
           />
-          {/* Inner lime orbital coin */}
+          {/* Inner sage orbital coin */}
           <motion.circle
             cx="23.5"
             cy="16.5"
             r="7.2"
-            fill="var(--mintly-lime, #B9FF4B)"
+            fill="var(--sage-300, #A9D6B8)"
             initial={animateOnLoad ? { scale: 0.4, opacity: 0 } : false}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ ...SPRING_BOUNCY, delay: 0.1 }}
@@ -210,7 +210,7 @@ export const MintlyLogoLockup: React.FC<{
       whileTap={{ scale: 0.92 }}
       animate={tapCount > 0 ? { scale: [1, 1.08, 0.97, 1] } : undefined}
       transition={SPRING_BOUNCY}
-      className="inline-flex items-center gap-2.5 cursor-pointer whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-[#B9FF4B] rounded-full px-1 py-0.5"
+      className="inline-flex items-center gap-2.5 cursor-pointer whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-[var(--teal-900)] rounded-full px-1 py-0.5"
     >
       <MintlyLogomark concept={concept} size={compact ? 26 : 32} />
       <MintlyWordmark tone={tone} size={compact ? 'sm' : 'md'} />
@@ -249,7 +249,7 @@ export const MintlyAppIcon: React.FC<{
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            'radial-gradient(circle at 75% 20%, rgba(185, 255, 75, 0.22), transparent 62%)',
+            'radial-gradient(circle at 75% 20%, rgba(169, 214, 184, 0.34), transparent 62%)',
         }}
       />
       <MintlyLogomark concept={concept} size={Math.round(size * 0.58)} animateOnLoad={false} />
@@ -278,7 +278,7 @@ export const MintlySplashMark: React.FC<{
       <div
         aria-hidden="true"
         className="absolute -top-12 w-36 h-36 rounded-full blur-2xl pointer-events-none"
-        style={{ background: 'rgba(185, 255, 75, 0.2)' }}
+        style={{ background: 'rgba(169, 214, 184, 0.28)' }}
       />
       <MintlyAppIcon concept={concept} size={64} tone={tone} />
       <div>

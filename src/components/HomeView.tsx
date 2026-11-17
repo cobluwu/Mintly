@@ -35,7 +35,14 @@ import {
   STAGGER_ITEM,
   triggerHaptic,
 } from '../shared/motion';
-import { TopScreenHeader } from './ui/TopScreenHeader';
+import {
+  Chip,
+  IconBadge,
+  PageHeader,
+  Pill,
+  SectionHeader,
+  WhiteCard,
+} from './ui';
 import { CardCarousel, type CardControlState } from './CardCarousel';
 import { PromoProgressCard } from './ui/PromoProgressCard';
 import { TealChallengeCard } from './ui/TealChallengeCard';
@@ -83,32 +90,31 @@ const SwipeableActivityRow: React.FC<{
       className="relative overflow-hidden"
     >
       {/* Revealed Swipe Action Tray */}
-      <div className="absolute inset-y-0 right-0 flex items-center gap-1.5 pr-3 bg-[#F4F7F4]">
-        <button
-          type="button"
+      <div className="absolute inset-y-0 right-0 flex items-center gap-1.5 pr-3 bg-[var(--surface-tint)]">
+        <Pill
+          variant="sage-soft"
+          size="sm"
           onClick={() => {
-            triggerHaptic(10);
             setRevealed(false);
             onSplit();
           }}
-          className="min-h-[36px] px-3 rounded-full bg-[#DDEFE3] text-[#0E2B2B] text-xs font-medium cursor-pointer"
         >
           Split
-        </button>
+        </Pill>
         {canReverse && (
-          <button
-            type="button"
+          <Pill
+            variant="danger"
+            size="sm"
+            aria-label={`Reverse ${tx.merchant}`}
+            icon={<RotateCcw className="w-3 h-3" />}
             onClick={() => {
               triggerHaptic(14);
               setRevealed(false);
               onReverse(tx.id);
             }}
-            aria-label={`Reverse ${tx.merchant}`}
-            className="min-h-[36px] px-3 rounded-full bg-[#E26D5C] text-white text-xs font-medium inline-flex items-center gap-1 cursor-pointer"
           >
-            <RotateCcw className="w-3 h-3" />
-            <span>Undo</span>
-          </button>
+            Undo
+          </Pill>
         )}
       </div>
 
@@ -130,13 +136,13 @@ const SwipeableActivityRow: React.FC<{
         onClick={() => {
           if (revealed) setRevealed(false);
         }}
-        className="relative z-10 flex items-center justify-between gap-3 py-3.5 px-4 bg-white"
+        className="relative z-10 flex items-center justify-between gap-3 py-3.5 px-4 bg-[var(--surface-l2)]"
       >
         <div className="flex items-center gap-3 min-w-0">
           <CategoryGlyph category={tx.category} size={40} />
           <div className="min-w-0">
-            <p className="text-sm font-medium text-[#0E2B2B] truncate">{tx.merchant}</p>
-            <p className="text-xs text-[#6B7F7C] truncate">
+            <p className="text-sm font-medium text-[var(--ink)] truncate">{tx.merchant}</p>
+            <p className="text-xs text-[var(--muted)] truncate">
               {categoryLabel}
               <span aria-hidden="true"> · </span>
               <span>{formatActivityDayHeader(tx.occurredAtUtc)}</span>
@@ -150,19 +156,19 @@ const SwipeableActivityRow: React.FC<{
           <span
             className={`text-sm font-medium tabular-nums ${
               tx.status === 'reversed'
-                ? 'text-[#6B7F7C] line-through'
+                ? 'text-[var(--muted)] line-through'
                 : tx.type === 'income'
-                  ? 'text-[#0B3B3A]'
-                  : 'text-[#0E2B2B]'
+                  ? 'text-[var(--teal-900)]'
+                  : 'text-[var(--ink)]'
             }`}
           >
             {tx.type === 'income' ? '+' : '-'}
             {fmtINR(tx.amountCents)}
           </span>
           {tx.roundUpPaise ? (
-            <span className="px-2 py-0.5 rounded-full bg-[#DDEFE3] text-[#0B3B3A] font-mono text-[10px] font-medium tabular-nums">
+            <Chip variant="sage" className="font-mono text-[10px] tabular-nums px-2 py-0.5">
               +{fmtINR(tx.roundUpPaise)} saved
-            </span>
+            </Chip>
           ) : null}
         </div>
       </motion.div>
@@ -223,6 +229,13 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const featuredBudget = budgets[0];
   const recentTx = workspace.transactions.slice(0, 4);
 
+  const headerSubtitle =
+    homeMode === 'overview'
+      ? workspace.profile.language === 'hinglish'
+        ? t.greeting.subtitleOnTrack
+        : "Here's your account overview"
+      : `${t.home.paceLabels[runway.pace]} · ${runway.daysRemaining} ${t.home.daysLeft} (${runway.nextAllowanceLabel})`;
+
   return (
     <motion.div
       variants={STAGGER_CONTAINER}
@@ -230,9 +243,11 @@ export const HomeView: React.FC<HomeViewProps> = ({
       animate="show"
       className="space-y-5"
     >
-      {/* Top Bar: Segmented Pill Toggle (Overview | Budget) + Circular Mochi Avatar */}
-      <TopScreenHeader
+      {/* Top Bar + Editorial Hero Greeting via shared PageHeader primitive */}
+      <PageHeader
         layoutId="home-mode-pill"
+        title={`Welcome back, ${firstName}`}
+        subtitle={headerSubtitle}
         value={homeMode}
         onChange={setHomeMode}
         options={[
@@ -243,20 +258,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
         mochiAccessory={workspace.rewards?.equippedAccessoryId}
         onAvatarClick={onOpenSettings}
       />
-
-      {/* Editorial Hero Greeting */}
-      <motion.section variants={STAGGER_ITEM} className="space-y-1 pt-1">
-        <h1 className="font-display text-[36px] sm:text-[40px] font-medium tracking-[-0.03em] leading-[1.08] text-[#0E2B2B]">
-          Welcome back, {firstName}
-        </h1>
-        <p className="text-sm text-[#6B7F7C]">
-          {homeMode === 'overview'
-            ? workspace.profile.language === 'hinglish'
-              ? t.greeting.subtitleOnTrack
-              : "Here's your account overview"
-            : `${t.home.paceLabels[runway.pace]} · ${runway.daysRemaining} ${t.home.daysLeft} (${runway.nextAllowanceLabel})`}
-        </p>
-      </motion.section>
 
       <AnimatePresence mode="wait">
         {homeMode === 'overview' ? (
@@ -293,34 +294,30 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   {
                     key: 'income',
                     label: t.home.addIncome,
-                    icon: <ArrowDownLeft className="w-4 h-4 text-[#0B3B3A]" />,
+                    icon: <ArrowDownLeft className="w-4 h-4 text-[var(--teal-900)]" />,
                   },
                   {
                     key: 'split',
                     label: t.home.splitBill,
-                    icon: <Users className="w-4 h-4 text-[#0B3B3A]" />,
+                    icon: <Users className="w-4 h-4 text-[var(--teal-900)]" />,
                   },
                   {
                     key: 'vault',
                     label: t.home.addVault,
-                    icon: <PiggyBank className="w-4 h-4 text-[#0B3B3A]" />,
+                    icon: <PiggyBank className="w-4 h-4 text-[var(--teal-900)]" />,
                   },
                 ] as const
               ).map((action) => (
-                <motion.button
+                <Pill
                   key={action.key}
-                  type="button"
-                  whileTap={{ scale: 0.97 }}
-                  transition={SPRING_BOUNCY}
-                  onClick={() => {
-                    triggerHaptic(8);
-                    onQuickAction(action.key);
-                  }}
-                  className="min-h-[44px] px-3 rounded-full bg-white/65 hover:bg-white/90 backdrop-blur-xl border border-white/75 text-xs font-medium text-[#0E2B2B] shadow-[0_8px_20px_-10px_rgba(14,43,43,0.14)] inline-flex items-center justify-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap"
+                  variant="ghost"
+                  size="md"
+                  icon={action.icon}
+                  onClick={() => onQuickAction(action.key)}
+                  className="bg-white/65 hover:bg-white/90 border-white/75 text-xs px-3 shadow-[0_8px_20px_-10px_rgba(14,43,43,0.14)]"
                 >
-                  {action.icon}
-                  <span>{action.label}</span>
-                </motion.button>
+                  {action.label}
+                </Pill>
               ))}
             </div>
 
@@ -348,9 +345,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
             />
 
             {/* 7-Day Spending Pulse White Card */}
-            <section className="mintly-white-card p-5 space-y-4">
+            <WhiteCard className="space-y-4">
               <div className="flex items-center justify-between gap-2">
-                <h2 className="font-display text-lg font-medium tracking-[-0.02em] text-[#0E2B2B]">
+                <h2 className="font-display text-lg font-medium tracking-[-0.02em] text-[var(--ink)]">
                   {t.home.weeklyPulse}
                 </h2>
                 <button
@@ -359,7 +356,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     triggerHaptic(8);
                     onNavigateTab('plans');
                   }}
-                  className="text-xs font-medium text-[#0E2B2B] underline underline-offset-4 hover:text-[#0B3B3A] cursor-pointer min-h-[36px] px-1"
+                  className="text-xs font-medium text-[var(--ink)] underline underline-offset-4 hover:text-[var(--teal-900)] cursor-pointer min-h-[36px] px-1"
                 >
                   {t.nav.plans}
                 </button>
@@ -373,7 +370,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 onSelectDay={setSelectedDayKey}
               />
 
-              <div className="pt-3 border-t border-[#0E2B2B]/[0.06] space-y-2">
+              <div className="pt-3 border-t border-[var(--hairline-soft)] space-y-2">
                 {budgets.slice(0, 2).map((b) => {
                   const pct = Math.min(100, Math.round(b.utilizationRatio * 100));
                   return (
@@ -381,35 +378,27 @@ export const HomeView: React.FC<HomeViewProps> = ({
                       key={b.budget.id}
                       className="flex items-center justify-between gap-3 text-xs"
                     >
-                      <span className="text-[#0E2B2B] font-medium truncate">
+                      <span className="text-[var(--ink)] font-medium truncate">
                         {t.categories[b.budget.category]}
                       </span>
-                      <span className="text-[#6B7F7C] tabular-nums shrink-0">
+                      <span className="text-[var(--muted)] tabular-nums shrink-0">
                         {fmtINR(b.spentCents)} / {fmtINR(b.budget.limitCents)} ({pct}%)
                       </span>
                     </div>
                   );
                 })}
               </div>
-            </section>
+            </WhiteCard>
 
             {/* Recent Activity Stream with Hairline Dividers & View All */}
             <section className="space-y-3">
-              <div className="flex items-center justify-between px-1">
-                <h2 className="text-sm font-medium text-[#6B7F7C]">{t.nav.activity}</h2>
-                <button
-                  type="button"
-                  onClick={() => {
-                    triggerHaptic(8);
-                    onNavigateTab('activity');
-                  }}
-                  className="text-sm font-medium text-[#0E2B2B] underline underline-offset-4 hover:text-[#0B3B3A] cursor-pointer min-h-[36px]"
-                >
-                  View All
-                </button>
-              </div>
+              <SectionHeader
+                title={t.nav.activity}
+                actionLabel="View All"
+                onAction={() => onNavigateTab('activity')}
+              />
 
-              <div className="mintly-white-card overflow-hidden divide-y divide-[#0E2B2B]/[0.06]">
+              <WhiteCard noPadding divideY>
                 <AnimatePresence initial={false}>
                   {recentTx.map((tx) => (
                     <SwipeableActivityRow
@@ -421,7 +410,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     />
                   ))}
                 </AnimatePresence>
-              </div>
+              </WhiteCard>
             </section>
           </motion.div>
         ) : (
@@ -447,48 +436,46 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
             {/* Quick Budget Tools: Monthly Report + Mint Coins */}
             <div className="grid grid-cols-2 gap-2.5">
-              <button
-                type="button"
-                onClick={() => {
-                  triggerHaptic(8);
-                  onOpenReport();
-                }}
-                className="mintly-white-card p-3.5 text-left flex items-center justify-between gap-2 cursor-pointer hover:bg-white transition-colors"
+              <WhiteCard
+                onClick={onOpenReport}
+                className="p-3.5 flex items-center justify-between gap-2"
               >
                 <div className="min-w-0">
-                  <p className="text-[11px] font-medium text-[#6B7F7C] truncate">
+                  <p className="text-[11px] font-medium text-[var(--muted)] truncate">
                     {t.extras.moneyReport}
                   </p>
-                  <p className="font-mono text-sm font-semibold text-[#0E2B2B] tabular-nums mt-0.5">
+                  <p className="font-mono text-sm font-semibold text-[var(--ink)] tabular-nums mt-0.5">
                     {monthlyReport.deltaPercent > 0 ? '+' : ''}
                     {monthlyReport.deltaPercent}% MoM
                   </p>
                 </div>
-                <span className="w-8 h-8 rounded-full bg-[#DDEFE3] text-[#0B3B3A] flex items-center justify-center shrink-0">
-                  <BarChart3 className="w-4 h-4" />
-                </span>
-              </button>
+                <IconBadge
+                  icon={<BarChart3 className="w-4 h-4" />}
+                  tone="sage"
+                  size="sm"
+                  shape="circle"
+                />
+              </WhiteCard>
 
-              <button
-                type="button"
-                onClick={() => {
-                  triggerHaptic(8);
-                  onOpenRewards();
-                }}
-                className="mintly-white-card p-3.5 text-left flex items-center justify-between gap-2 cursor-pointer hover:bg-white transition-colors"
+              <WhiteCard
+                onClick={onOpenRewards}
+                className="p-3.5 flex items-center justify-between gap-2"
               >
                 <div className="min-w-0">
-                  <p className="text-[11px] font-medium text-[#6B7F7C] truncate">
+                  <p className="text-[11px] font-medium text-[var(--muted)] truncate">
                     {t.extras.mintCoins}
                   </p>
-                  <p className="font-mono text-sm font-semibold text-[#0E2B2B] tabular-nums mt-0.5">
+                  <p className="font-mono text-sm font-semibold text-[var(--ink)] tabular-nums mt-0.5">
                     {workspace.rewards?.coins ?? 0} Coins
                   </p>
                 </div>
-                <span className="w-8 h-8 rounded-full bg-[#F3EFDC] text-[#0B3B3A] flex items-center justify-center shrink-0">
-                  <Coins className="w-4 h-4" />
-                </span>
-              </button>
+                <IconBadge
+                  icon={<Coins className="w-4 h-4" />}
+                  tone="cream"
+                  size="sm"
+                  shape="circle"
+                />
+              </WhiteCard>
             </div>
 
             <AllowanceRunway
@@ -501,15 +488,15 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
             {/* Contextual Indian Campus Calendar Nudges */}
             {nudges.length > 0 && (
-              <section className="mintly-white-card p-5 space-y-3">
+              <WhiteCard className="space-y-3">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <CalendarClock className="w-4 h-4 text-[#0B3B3A]" />
-                    <h2 className="text-sm font-medium text-[#0E2B2B]">
+                    <CalendarClock className="w-4 h-4 text-[var(--teal-900)]" />
+                    <h2 className="text-sm font-medium text-[var(--ink)]">
                       {t.extras.campusNudges}
                     </h2>
                   </div>
-                  <span className="text-[11px] font-mono text-[#6B7F7C]">
+                  <span className="text-[11px] font-mono text-[var(--muted)]">
                     {nudges.length} active
                   </span>
                 </div>
@@ -517,61 +504,55 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   {nudges.map((nudge) => (
                     <div
                       key={nudge.id}
-                      className="rounded-2xl bg-[#F4F7F4] border border-[#0E2B2B]/[0.06] p-3.5 flex items-start justify-between gap-3"
+                      className="rounded-2xl bg-[var(--surface-tint)] border border-[var(--hairline-soft)] p-3.5 flex items-start justify-between gap-3"
                     >
                       <div className="space-y-1 min-w-0">
-                        <p className="text-xs font-semibold text-[#0E2B2B]">{nudge.title}</p>
-                        <p className="text-[11px] text-[#6B7F7C] leading-relaxed">{nudge.body}</p>
+                        <p className="text-xs font-semibold text-[var(--ink)]">{nudge.title}</p>
+                        <p className="text-[11px] text-[var(--muted)] leading-relaxed">{nudge.body}</p>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          triggerHaptic(8);
-                          onHandleNudge(nudge);
-                        }}
-                        className="min-h-[34px] px-3 rounded-full bg-[#0B3B3A] text-white text-[11px] font-medium inline-flex items-center gap-1 shrink-0 cursor-pointer"
+                      <Pill
+                        variant="ink"
+                        size="sm"
+                        onClick={() => onHandleNudge(nudge)}
+                        className="min-h-[34px] px-3 text-[11px]"
                       >
                         <span>{nudge.actionLabel}</span>
                         <ChevronRight className="w-3 h-3" />
-                      </button>
+                      </Pill>
                     </div>
                   ))}
                 </div>
-              </section>
+              </WhiteCard>
             )}
 
-            <section className="mintly-white-card p-5 space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-sm font-medium text-[#6B7F7C]">Category Budgets</h2>
-                <button
-                  type="button"
-                  onClick={() => onNavigateTab('plans')}
-                  className="text-xs font-medium text-[#0E2B2B] underline underline-offset-4 cursor-pointer"
-                >
-                  View All
-                </button>
-              </div>
+            <WhiteCard className="space-y-4">
+              <SectionHeader
+                title="Category Budgets"
+                actionLabel="View All"
+                onAction={() => onNavigateTab('plans')}
+                className="px-0"
+              />
 
               <div className="space-y-3.5">
                 {budgets.map((b) => {
                   const pct = Math.min(100, Math.round(b.utilizationRatio * 100));
                   const barColor =
                     b.utilizationRatio >= 1
-                      ? '#E26D5C'
+                      ? 'var(--coral)'
                       : b.utilizationRatio >= 0.75
-                        ? '#E8B64C'
-                        : '#0B3B3A';
+                        ? 'var(--amber)'
+                        : 'var(--teal-900)';
                   return (
                     <div key={b.budget.id} className="space-y-1.5">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="font-medium text-[#0E2B2B]">
+                        <span className="font-medium text-[var(--ink)]">
                           {t.categories[b.budget.category]}
                         </span>
-                        <span className="text-[#6B7F7C] tabular-nums">
+                        <span className="text-[var(--muted)] tabular-nums">
                           {fmtINR(b.spentCents)} / {fmtINR(b.budget.limitCents)}
                         </span>
                       </div>
-                      <div className="h-2 rounded-full bg-[#ECEFED] overflow-hidden">
+                      <div className="h-2 rounded-full bg-[var(--surface-track)] overflow-hidden">
                         <div
                           style={{ width: `${pct}%`, backgroundColor: barColor }}
                           className="h-full rounded-full transition-all"
@@ -581,7 +562,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   );
                 })}
               </div>
-            </section>
+            </WhiteCard>
           </motion.div>
         )}
       </AnimatePresence>

@@ -26,6 +26,11 @@ export interface CoachStructuredReply {
   };
 }
 
+function sanitizeInrText(value: unknown): string {
+  if (typeof value !== 'string') return '';
+  return value.replace(/\$\s?(\d)/g, '₹$1').trim();
+}
+
 export async function generateCoachReply(params: {
   question: string;
   workspace: MintlyWorkspaceState;
@@ -70,40 +75,72 @@ ${recentTurns || 'None'}
 STUDENT_QUESTION:
 ${question}`;
 
-  const response = await ai.models.generateContent({
-    model: 'gemini-4-hydrogen',
-    contents: prompt,
-    config: {
-      thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
-      systemInstruction,
-      responseMimeType: 'application/json',
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          answer: { type: Type.STRING },
-          confirmedFacts: {
-            type: Type.ARRAY,
-            items: { type: Type.STRING },
-          },
-          forecastNote: { type: Type.STRING },
-        },
-        required: ['answer', 'confirmedFacts', 'forecastNote'],
-      },
-    },
-  });
+  const GEMINI_TIMEOUT_MS = 7500;
+  let timer: ReturnType<typeof setTimeout> | undefined;
 
-  const rawText = (response.text ?? '').trim();
-  const parsed = JSON.parse(rawText) as CoachStructuredReply;
-  const firstVault = snapshot.vaults[0];
-  return {
-    answer: parsed.answer,
-    confirmedFacts: Array.isArray(parsed.confirmedFacts) ? parsed.confirmedFacts.slice(0, 4) : [],
-    forecastNote: parsed.forecastNote || 'Projection assumes current daily spending pace holds.',
-    suggestedAction:
-      /save|vault|boost|trim|bacha|laptop|goa/i.test(question) && firstVault
-        ? { label: `Boost ${firstVault.title} ₹200`, vaultId: firstVault.id, amountCents: 20000 }
-        : undefined,
-  };
+  try {
+    const response = await Promise.race([
+      ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: prompt,
+        config: {
+          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+          systemInstruction,
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              answer: { type: Type.STRING },
+              confirmedFacts: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
+              },
+              forecastNote: { type: Type.STRING },
+            },
+            required: ['answer', 'confirmedFacts', 'forecastNote'],
+          },
+        },
+      }),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error('Coach Gemini timeout')), GEMINI_TIMEOUT_MS);
+      }),
+    ]);
+
+    const rawText = (response.text ?? '').trim();
+    const parsed = JSON.parse(rawText) as Partial<CoachStructuredReply>;
+    const cleanAnswer = sanitizeInrText(parsed.answer);
+    if (!cleanAnswer) {
+      return buildDeterministicFallbackReply(question, snapshot);
+    }
+
+    const cleanFacts = Array.isArray(parsed.confirmedFacts)
+      ? parsed.confirmedFacts.map(sanitizeInrText).filter(Boolean).slice(0, 4)
+      : [];
+
+    const firstVault = snapshot.vaults[0];
+    return {
+      answer: cleanAnswer,
+      confirmedFacts:
+        cleanFacts.length > 0
+          ? cleanFacts
+          : [
+              `Liquid balance: ${snapshot.liquidBalanceFormatted} (${snapshot.upcomingBillsFormatted} reserved for bills)`,
+              `Daily safe spend: ${snapshot.dailySafeSpendFormatted} across ${snapshot.daysUntilAllowance} days`,
+            ],
+      forecastNote:
+        sanitizeInrText(parsed.forecastNote) ||
+        'Estimate: Assumes current daily campus spending pace continues through your next allowance reset.',
+      suggestedAction:
+        /save|vault|boost|trim|bacha|laptop|goa|poora/i.test(question) && firstVault
+          ? { label: `Boost ${firstVault.title} ₹200`, vaultId: firstVault.id, amountCents: 20000 }
+          : undefined,
+    };
+  } catch (err) {
+    console.warn('Gemini coach fallback triggered:', err instanceof Error ? err.message : err);
+    return buildDeterministicFallbackReply(question, snapshot);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 }
 
 function buildDeterministicFallbackReply(
@@ -122,14 +159,30 @@ function buildDeterministicFallbackReply(
 
   let suggestedAction: CoachStructuredReply['suggestedAction'] | undefined;
 
-  if (q.includes('afford') || q.includes('fest') || q.includes('pass') || q.includes('swiggy') || q.includes('buy') || q.includes('800')) {
+  if (
+    q.includes('afford') ||
+    q.includes('fest') ||
+    q.includes('pass') ||
+    q.includes('swiggy') ||
+    q.includes('buy') ||
+    q.includes('800') ||
+    q.includes('le sakti') ||
+    q.includes('order kar')
+  ) {
     answer = isHinglish
       ? `Next ${snapshot.daysUntilAllowance} din tak aapka safe daily spend ${snapshot.dailySafeSpendFormatted} hai. Ek ₹800 fest pass ya Swiggy treat tabhi smooth rahega agar agle 2 din canteen chai & mess meals pe stay karo.`
       : `With ${snapshot.daysUntilAllowance} days left until reset (${snapshot.nextAllowanceDate}), your safe daily spend is ${snapshot.dailySafeSpendFormatted}. A ₹800 fest pass or treat fits comfortably if you keep the next two campus days low-spend.`;
-  } else if (q.includes('vault') || q.includes('laptop') || q.includes('goa') || q.includes('round')) {
+  } else if (
+    q.includes('vault') ||
+    q.includes('laptop') ||
+    q.includes('goa') ||
+    q.includes('round') ||
+    q.includes('poora') ||
+    q.includes('1,14,900')
+  ) {
     if (topVault) {
       answer = isHinglish
-        ? `Aapka ${topVault.title} abhi ${topVault.percent}% (${topVault.saved} of ${topVault.target}) pe hai${snapshot.roundUp.enabled ? `, aur ₹10 round-ups se ${snapshot.roundUp.monthlySaved} extra save ho chuke hain` : ''}.`
+        ? `Aapka ${topVault.title} abhi ${topVault.percent}% (${topVault.saved} of ${topVault.target}) pe hai${snapshot.roundUp.enabled ? `, aur ₹10 round-ups se ${topVault.title} mein ${snapshot.roundUp.monthlySaved} extra save ho chuke hain` : ''}.`
         : `Your ${topVault.title} is at ${topVault.percent}% (${topVault.saved} of ${topVault.target})${snapshot.roundUp.enabled ? `, boosted by ${snapshot.roundUp.monthlySaved} from ₹10 round-ups this month` : ''}.`;
       suggestedAction = {
         label: `Boost ${topVault.title} ₹200`,
@@ -137,7 +190,13 @@ function buildDeterministicFallbackReply(
         amountCents: 20000,
       };
     }
-  } else if (q.includes('trim') || q.includes('save') || q.includes('cut') || q.includes('bacha')) {
+  } else if (
+    q.includes('trim') ||
+    q.includes('save') ||
+    q.includes('cut') ||
+    q.includes('bacha') ||
+    q.includes('kahan')
+  ) {
     if (topCat) {
       answer = isHinglish
         ? `Is cycle mein sabse zyada kharch ${topCat.category} (${topCat.total}) mein hua hai. Hafte mein 2 late-night deliveries skip karke aap turant ₹450–₹500 bacha sakti hain.`

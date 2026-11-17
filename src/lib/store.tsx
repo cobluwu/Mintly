@@ -26,7 +26,12 @@ import {
   type WorkspaceInvariantReport,
 } from '../shared/finance';
 import { createInitialSeedState } from '../shared/seed';
-import { loadLocalWorkspace, resetLocalWorkspace, saveLocalWorkspace } from './storage';
+import {
+  loadLocalWorkspace,
+  resetLocalWorkspace,
+  sanitizeWorkspaceState,
+  saveLocalWorkspace,
+} from './storage';
 
 export type MintlyStoreAction =
   | { type: 'HYDRATE'; payload: MintlyWorkspaceState }
@@ -50,6 +55,11 @@ export type MintlyStoreAction =
       type: 'UPDATE_TRANSACTION_CATEGORY';
       txId: string;
       category: SpendingCategory;
+    }
+  | {
+      type: 'UPDATE_TRANSACTION_NOTE';
+      txId: string;
+      note: string;
     }
   | { type: 'IMPORT_TRANSACTIONS'; transactions: Transaction[] }
   | { type: 'TOGGLE_ACCOUNT_FREEZE'; accountId: string }
@@ -119,7 +129,7 @@ export function mintlyWorkspaceReducer(
 
   switch (action.type) {
     case 'HYDRATE':
-      return action.payload;
+      return sanitizeWorkspaceState(action.payload, state);
 
     case 'RESET_DEMO':
       return createInitialSeedState(nowIso, state.profile.uid);
@@ -273,6 +283,16 @@ export function mintlyWorkspaceReducer(
         ...state,
         transactions: state.transactions.map((tx) =>
           tx.id === action.txId ? { ...tx, category: action.category } : tx
+        ),
+      };
+    }
+
+    case 'UPDATE_TRANSACTION_NOTE': {
+      const nextNote = action.note.trim() || undefined;
+      return {
+        ...state,
+        transactions: state.transactions.map((tx) =>
+          tx.id === action.txId ? { ...tx, note: nextNote } : tx
         ),
       };
     }

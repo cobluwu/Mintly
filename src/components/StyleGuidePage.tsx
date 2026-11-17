@@ -1,29 +1,39 @@
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
-import { ArrowLeft, ArrowUpRight, Sparkles } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, Filter, Laptop, Sparkles } from 'lucide-react';
 import type { FinancialAccount } from '../shared/types';
-import { SPRING_BOUNCY } from '../shared/motion';
-import { SegmentedToggle } from './ui/SegmentedToggle';
+import {
+  AvatarStack,
+  Chip,
+  EmptyState,
+  GlassCard,
+  IconBadge,
+  PageHeader,
+  PageShell,
+  Pill,
+  SectionHeader,
+  Skeleton,
+  StatBlock,
+  TealFeatureCard,
+  WhiteCard,
+} from './ui';
 import { FloatingBottomNav, type NavTabKey } from './ui/FloatingBottomNav';
 import { CardCarousel, type CardControlState } from './CardCarousel';
 import { PromoProgressCard } from './ui/PromoProgressCard';
 import { TealChallengeCard } from './ui/TealChallengeCard';
 import { ChatComposer } from './ui/ChatComposer';
-import { EditorialAmount } from './ui/EditorialAmount';
-import { MochiMascot } from './brand/MochiMascot';
 
 interface StyleGuidePageProps {
   onBackToApp: () => void;
 }
 
 const COLOR_TOKENS = [
-  { name: '--ink', hex: '#0E2B2B', label: 'Ink Teal (Headings)' },
-  { name: '--teal-900', hex: '#0B3B3A', label: 'Teal 900 (Hero & CTA)' },
-  { name: '--teal-800', hex: '#14504D', label: 'Teal 800 (Depth)' },
-  { name: '--sage-300', hex: '#A9D6B8', label: 'Sage 300 (Progress)' },
-  { name: '--sage-100', hex: '#DDEFE3', label: 'Sage 100 (Soft Tint)' },
+  { name: '--ink', hex: '#0E2B2B', label: 'Ink Teal' },
+  { name: '--teal-900', hex: '#0B3B3A', label: 'Teal 900' },
+  { name: '--teal-800', hex: '#14504D', label: 'Teal 800' },
+  { name: '--sage-300', hex: '#A9D6B8', label: 'Sage 300' },
+  { name: '--sage-100', hex: '#DDEFE3', label: 'Sage 100' },
   { name: '--cream', hex: '#F3EFDC', label: 'Cream Glow' },
-  { name: '--muted', hex: '#6B7F7C', label: 'Muted Sage Gray' },
+  { name: '--muted', hex: '#6B7F7C', label: 'Muted Sage' },
   { name: '--amber', hex: '#E8B64C', label: 'Soft Amber' },
   { name: '--coral', hex: '#E26D5C', label: 'Soft Coral' },
 ];
@@ -63,9 +73,19 @@ const SAMPLE_ACCOUNTS: FinancialAccount[] = [
   },
 ];
 
+const SAMPLE_MEMBERS = [
+  { id: 'm1', name: 'Maya Lin', initials: 'ML', color: 'var(--sage-300)' },
+  { id: 'm2', name: 'Aarav Patel', initials: 'AP', color: 'var(--cream)' },
+  { id: 'm3', name: 'Riya Sharma', initials: 'RS', color: 'var(--sage-100)' },
+  { id: 'm4', name: 'Kabir Verma', initials: 'KV', color: 'var(--teal-800)' },
+  { id: 'm5', name: 'Devika Nair', initials: 'DN', color: 'var(--amber)' },
+  { id: 'm6', name: 'Zoya Khan', initials: 'ZK' },
+];
+
 export const StyleGuidePage: React.FC<StyleGuidePageProps> = ({ onBackToApp }) => {
-  const [toggleValue, setToggleValue] = useState<'overview' | 'budget'>('overview');
+  const [viewMode, setViewMode] = useState<'all' | 'tokens' | 'primitives'>('all');
   const [navTab, setNavTab] = useState<NavTabKey>('home');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'dining' | 'upi'>('all');
   const [chatInput, setChatInput] = useState('');
   const [cardControls, setCardControls] = useState<Record<string, CardControlState>>({
     sg_bank: { frozen: false, dailyLimitCents: 250000 },
@@ -73,200 +93,296 @@ export const StyleGuidePage: React.FC<StyleGuidePageProps> = ({ onBackToApp }) =
     sg_mess: { frozen: false, dailyLimitCents: 80000 },
   });
 
+  const showTokens = viewMode === 'all' || viewMode === 'tokens';
+  const showPrimitives = viewMode === 'all' || viewMode === 'primitives';
+
   return (
-    <div className="min-h-screen relative overflow-x-clip text-[#0E2B2B]">
-      {/* Atmospheric Drifting Mesh Gradient + Grain Overlay */}
-      <div className="fixed inset-0 -z-20 mintly-atmosphere-bg mintly-atmosphere-drift pointer-events-none" />
-      <div className="fixed inset-0 -z-10 mintly-grain-overlay pointer-events-none" />
+    <PageShell bottomNavPadding={false}>
+      <div className="space-y-6 pb-8">
+        <PageHeader
+          layoutId="sg-page-header-toggle"
+          title="Mintly Style Guide"
+          subtitle="Shared L0–L3 surfaces, tokens & all primitive variants"
+          value={viewMode}
+          onChange={setViewMode}
+          options={[
+            { value: 'all', label: 'All' },
+            { value: 'tokens', label: 'Tokens' },
+            { value: 'primitives', label: 'Primitives' },
+          ]}
+          mochiMood="chill"
+          onAvatarClick={onBackToApp}
+          avatarLabel="Return to Mintly Home"
+          rightAction={
+            <Pill
+              variant="glass"
+              size="sm"
+              icon={<ArrowLeft className="w-3.5 h-3.5" />}
+              onClick={onBackToApp}
+            >
+              Home
+            </Pill>
+          }
+        />
 
-      <div className="max-w-[430px] mx-auto px-5 pt-6 pb-20 space-y-8">
-        {/* Header */}
-        <header className="flex items-center justify-between gap-3">
-          <motion.button
-            type="button"
-            whileTap={{ scale: 0.95 }}
-            transition={SPRING_BOUNCY}
-            onClick={onBackToApp}
-            className="min-h-[44px] px-4 rounded-full mintly-glass-shell text-xs font-medium text-[#0E2B2B] inline-flex items-center gap-2 cursor-pointer"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back to Home</span>
-          </motion.button>
-
-          <div className="w-11 h-11 rounded-full bg-white/80 border border-white flex items-center justify-center shadow-sm">
-            <MochiMascot mood="chill" size={36} interactive={false} />
-          </div>
-        </header>
-
-        <section className="space-y-1">
-          <h1 className="font-display text-[38px] font-medium tracking-[-0.03em] leading-[1.08] text-[#0E2B2B]">
-            Mintly Style Guide
-          </h1>
-          <p className="text-sm text-[#6B7F7C]">
-            Calm light-mode design tokens & signature components
-          </p>
-        </section>
-
-        {/* 1. Color Tokens */}
-        <section className="mintly-white-card p-5 space-y-4">
-          <h2 className="text-sm font-medium text-[#6B7F7C]">Color Tokens</h2>
-          <div className="grid grid-cols-3 gap-2.5">
-            {COLOR_TOKENS.map((tok) => (
-              <div key={tok.name} className="space-y-1.5">
-                <div
-                  style={{ backgroundColor: tok.hex }}
-                  className="h-11 rounded-2xl border border-[#0E2B2B]/10 shadow-inner"
-                />
-                <p className="font-mono text-[10px] font-medium text-[#0E2B2B] truncate">
-                  {tok.name}
-                </p>
-                <p className="text-[10px] text-[#6B7F7C] truncate">{tok.hex}</p>
+        {showTokens && (
+          <>
+            {/* Color Tokens */}
+            <WhiteCard className="space-y-4">
+              <SectionHeader title="1. Color Tokens" className="px-0" />
+              <div className="grid grid-cols-3 gap-2.5">
+                {COLOR_TOKENS.map((tok) => (
+                  <div key={tok.name} className="space-y-1.5 min-w-0">
+                    <div
+                      style={{ backgroundColor: tok.hex }}
+                      className="h-11 rounded-[16px] border border-[#0E2B2B]/10 shadow-inner"
+                    />
+                    <p className="font-mono text-[10px] font-medium text-[var(--ink)] truncate">
+                      {tok.name}
+                    </p>
+                    <p className="text-[10px] text-[var(--muted)] truncate">
+                      {tok.label} · {tok.hex}
+                    </p>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </section>
+            </WhiteCard>
 
-        {/* 2. Typography & Hero Numerals */}
-        <section className="mintly-white-card p-5 space-y-3">
-          <h2 className="text-sm font-medium text-[#6B7F7C]">
-            Typography · Instrument Sans
-          </h2>
-          <p className="font-display text-[36px] font-medium tracking-[-0.03em] leading-[1.08] text-[#0E2B2B]">
-            Welcome back, Maya
-          </p>
-          <p className="text-xs text-[#6B7F7C]">
-            Hero Money Pattern (small ₹ + large whole + small paise)
-          </p>
-          <div className="pt-1">
-            <EditorialAmount
-              valueCents={1119050}
-              currency="INR"
-              countUp={false}
-              className="font-display text-[42px] font-medium tracking-[-0.03em] text-[#0E2B2B]"
+            {/* Typography & Non-Clipping Wrapping */}
+            <WhiteCard className="space-y-3">
+              <SectionHeader title="2. Typography & Text-Wrap Discipline" className="px-0" />
+              <div className="space-y-2">
+                <p className="font-display text-[32px] font-medium tracking-[-0.03em] leading-[1.08] text-[var(--ink)]">
+                  Display · Welcome back
+                </p>
+                <p className="font-display text-lg font-medium tracking-[-0.02em] text-[var(--ink)]">
+                  Heading · Campus Savings & Vaults
+                </p>
+                <p className="text-[14px] text-[var(--ink)] leading-relaxed">
+                  Body · Long merchant names wrap up to two clean lines instead of awkwardly clipping mid-word:
+                </p>
+                <p
+                  title="Dining & Coffee · Dining Flex Campus Canteen & Chai Bar"
+                  className="text-sm font-medium text-[var(--ink)] line-clamp-2 rounded-[16px] bg-[var(--surface-subtle)] px-3 py-2"
+                >
+                  Dining & Coffee · Dining Flex Campus Canteen & Midnight Maggi Counter
+                </p>
+                <p className="text-xs text-[var(--muted)]">
+                  Caption · Food & Chai · UPI Lite · Verified
+                </p>
+                <p className="font-mono text-xs tabular-nums text-[var(--teal-900)]">
+                  Mono Figures · ₹14,850.50 · Ref 431900284910
+                </p>
+              </div>
+            </WhiteCard>
+
+            {/* Radii & Elevation L0-L3 */}
+            <div className="space-y-3">
+              <SectionHeader title="3. Elevation System (L0 – L3)" />
+              <GlassCard>
+                <p className="text-xs font-semibold text-[var(--ink)]">
+                  L1 · GlassCard (55% white, blur 24px, 24px radius)
+                </p>
+                <p className="text-xs text-[var(--muted)] mt-1">
+                  Used for account carousel shells, sticky search inputs, and floating controls.
+                </p>
+              </GlassCard>
+
+              <WhiteCard>
+                <p className="text-xs font-semibold text-[var(--ink)]">
+                  L2 · WhiteCard (solid white, 24px radius, inner highlight)
+                </p>
+                <p className="text-xs text-[var(--muted)] mt-1">
+                  Supports padded, noPadding + divideY row groups, and interactive button mode.
+                </p>
+              </WhiteCard>
+
+              <TealFeatureCard>
+                <p className="text-xs font-semibold text-white">
+                  L3 · TealFeatureCard (28px hero radius, dot-grid texture, radial glow)
+                </p>
+                <p className="text-xs text-white/75 mt-1">
+                  Reserved for the primary hero module on each screen.
+                </p>
+              </TealFeatureCard>
+            </div>
+          </>
+        )}
+
+        {showPrimitives && (
+          <>
+            {/* Pills & Chips */}
+            <WhiteCard className="space-y-4">
+              <SectionHeader title="4. Pill & Chip Variants" className="px-0" />
+              <div className="flex flex-wrap gap-2">
+                <Pill variant="ink" size="md" icon={<ArrowUpRight className="w-3.5 h-3.5" />} onClick={() => {}}>
+                  Ink Primary
+                </Pill>
+                <Pill variant="sage" size="md" onClick={() => {}}>
+                  Sage Accent
+                </Pill>
+                <Pill variant="sage-soft" size="md" onClick={() => {}}>
+                  Sage Soft
+                </Pill>
+                <Pill variant="glass" size="sm" onClick={() => {}}>
+                  Glass
+                </Pill>
+                <Pill variant="ghost" size="sm" onClick={() => {}}>
+                  Ghost
+                </Pill>
+                <Pill variant="danger" size="sm" onClick={() => {}}>
+                  Danger
+                </Pill>
+              </div>
+
+              <div className="pt-2 border-t border-[var(--hairline-soft)] space-y-2.5">
+                <p className="text-[11px] font-medium text-[var(--muted)]">
+                  Interactive Filter Chips & Semantic Status Chips
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Chip
+                    label="All"
+                    icon={<Filter className="w-3 h-3" />}
+                    active={activeFilter === 'all'}
+                    onClick={() => setActiveFilter('all')}
+                  />
+                  <Chip
+                    label="Food & Chai"
+                    active={activeFilter === 'dining'}
+                    onClick={() => setActiveFilter('dining')}
+                  />
+                  <Chip
+                    label="UPI Lite"
+                    active={activeFilter === 'upi'}
+                    onClick={() => setActiveFilter('upi')}
+                  />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Chip variant="sage">+₹10 saved</Chip>
+                  <Chip variant="coral">Pending verify</Chip>
+                  <Chip variant="amber">Caution pace</Chip>
+                  <Chip variant="teal">Verified</Chip>
+                  <Chip variant="glass">Auto-roundups ON</Chip>
+                </div>
+              </div>
+            </WhiteCard>
+
+            {/* StatBlock & IconBadge */}
+            <WhiteCard className="space-y-4">
+              <SectionHeader title="5. StatBlock & IconBadge" className="px-0" />
+              <div className="grid grid-cols-2 gap-4">
+                <StatBlock
+                  label="Hero Balance"
+                  valueCents={1119050}
+                  size="lg"
+                  caption="3 accounts active"
+                />
+                <StatBlock
+                  label="Daily Safe Spend"
+                  valueCents={34200}
+                  size="md"
+                  caption="On track this cycle"
+                />
+              </div>
+              <div className="pt-3 border-t border-[var(--hairline-soft)] flex flex-wrap items-center gap-2.5">
+                <IconBadge name="dining" tone="cream" size="sm" shape="circle" />
+                <IconBadge name="vault" tone="sage" size="md" shape="circle" />
+                <IconBadge name="bills" tone="teal" size="md" shape="rounded" />
+                <IconBadge name="expense" tone="coral" size="md" shape="rounded" />
+                <IconBadge name="gift" tone="amber" size="lg" shape="rounded" />
+                <IconBadge icon={<Laptop className="w-5 h-5" />} tone="neutral" size="lg" shape="circle" />
+              </div>
+            </WhiteCard>
+
+            {/* AvatarStack & EmptyState */}
+            <WhiteCard className="space-y-4">
+              <SectionHeader title="6. AvatarStack" className="px-0" />
+              <div className="flex items-center justify-between gap-3">
+                <AvatarStack members={SAMPLE_MEMBERS.slice(0, 3)} max={4} size={36} />
+                <AvatarStack members={SAMPLE_MEMBERS} max={4} size={36} />
+              </div>
+            </WhiteCard>
+
+            <EmptyState
+              title="No matching transactions"
+              description="Try clearing your search or checking another account filter."
+              mood="thinking"
+              actionLabel="Reset Filters"
+              onAction={() => setActiveFilter('all')}
             />
-          </div>
-        </section>
 
-        {/* 3. Segmented Pill Toggle */}
-        <section className="space-y-2.5">
-          <h2 className="text-sm font-medium text-[#6B7F7C]">1. Segmented Pill Toggle</h2>
-          <SegmentedToggle
-            layoutId="sg-segmented-toggle"
-            value={toggleValue}
-            onChange={setToggleValue}
-            options={[
-              { value: 'overview', label: 'Overview' },
-              { value: 'budget', label: 'Budget' },
-            ]}
-          />
-        </section>
+            {/* Skeletons */}
+            <div className="space-y-3">
+              <SectionHeader title="7. Skeleton Shimmer States" />
+              <Skeleton variant="hero-teal" />
+              <WhiteCard noPadding divideY>
+                <Skeleton variant="row" />
+                <Skeleton variant="row" />
+              </WhiteCard>
+            </div>
 
-        {/* 4. Floating Bottom Navigation */}
-        <section className="space-y-2.5">
-          <h2 className="text-sm font-medium text-[#6B7F7C]">2. Floating Bottom Nav</h2>
-          <FloatingBottomNav
-            activeTab={navTab}
-            onSelectTab={setNavTab}
-            labels={{
-              home: 'Home',
-              activity: 'Activity',
-              plans: 'Plans',
-              circles: 'Circles',
-              coach: 'Mochi',
-            }}
-          />
-        </section>
-
-        {/* 5. Glass Card Shell */}
-        <section className="space-y-2.5">
-          <h2 className="text-sm font-medium text-[#6B7F7C]">3. Glass Card Shell</h2>
-          <CardCarousel
-            accounts={SAMPLE_ACCOUNTS}
-            cardControls={cardControls}
-            holderName="Maya Lin"
-            totalBalancePaise={1007000}
-            primaryActionLabel="Add Expense"
-            onPrimaryAction={() => {}}
-            onToggleFreeze={(id) =>
-              setCardControls((prev) => ({
-                ...prev,
-                [id]: { ...prev[id], frozen: !prev[id].frozen },
-              }))
-            }
-            onChangeDailyLimit={(id, next) =>
-              setCardControls((prev) => ({
-                ...prev,
-                [id]: { ...prev[id], dailyLimitCents: next },
-              }))
-            }
-          />
-        </section>
-
-        {/* 6. White Promo/Progress Card */}
-        <section className="space-y-2.5">
-          <h2 className="text-sm font-medium text-[#6B7F7C]">4. White Progress Card</h2>
-          <PromoProgressCard
-            icon={<Sparkles className="w-4 h-4" />}
-            title="Laptop Fund"
-            description="Auto-roundups and monthly boosts bring your engineering laptop goal closer."
-            progressLeft="₹68,500 / ₹1,14,900"
-            progressRight="60%"
-            ratio={68500 / 114900}
-            onAction={() => {}}
-          />
-        </section>
-
-        {/* 7. Dark Teal Feature / Challenge Card */}
-        <section className="space-y-2.5">
-          <h2 className="text-sm font-medium text-[#6B7F7C]">5. Dark Teal Feature Card</h2>
-          <TealChallengeCard
-            title="Food & Chai Plan"
-            spentCents={148500}
-            limitCents={300000}
-            currency="INR"
-            streakTitle="Day 5 of 7"
-            ctaLabel="View Plan Details"
-            onCtaClick={() => {}}
-          />
-        </section>
-
-        {/* 8. Chat Composer */}
-        <section className="space-y-2.5">
-          <h2 className="text-sm font-medium text-[#6B7F7C]">6. Chat Composer</h2>
-          <ChatComposer
-            value={chatInput}
-            onChange={setChatInput}
-            onSubmit={() => setChatInput('')}
-            credits={76}
-          />
-        </section>
-
-        {/* 9. Button System */}
-        <section className="mintly-white-card p-5 space-y-3">
-          <h2 className="text-sm font-medium text-[#6B7F7C]">7. Button System</h2>
-          <div className="flex flex-wrap gap-2.5">
-            <button
-              type="button"
-              className="min-h-[44px] px-5 rounded-full bg-[#0B3B3A] text-white text-xs font-medium inline-flex items-center gap-1.5 cursor-pointer"
-            >
-              <span>View your plan</span>
-              <ArrowUpRight className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              className="min-h-[44px] px-5 rounded-full bg-[#A9D6B8] text-[#0E2B2B] text-xs font-medium cursor-pointer"
-            >
-              Save to Vault
-            </button>
-            <button
-              type="button"
-              className="min-h-[44px] px-5 rounded-full border border-[#0E2B2B]/15 text-[#0E2B2B] text-xs font-medium cursor-pointer"
-            >
-              Manage Account
-            </button>
-          </div>
-        </section>
+            {/* Signature Home Modules */}
+            <div className="space-y-3">
+              <SectionHeader title="8. Signature Home Modules" />
+              <FloatingBottomNav
+                activeTab={navTab}
+                onSelectTab={setNavTab}
+                labels={{
+                  home: 'Home',
+                  activity: 'Activity',
+                  plans: 'Plans',
+                  circles: 'Circles',
+                  coach: 'Mochi',
+                }}
+              />
+              <CardCarousel
+                accounts={SAMPLE_ACCOUNTS}
+                cardControls={cardControls}
+                holderName="Maya Lin"
+                totalBalancePaise={1007000}
+                primaryActionLabel="Add Expense"
+                onPrimaryAction={() => {}}
+                onToggleFreeze={(id) =>
+                  setCardControls((prev) => ({
+                    ...prev,
+                    [id]: { ...prev[id], frozen: !prev[id].frozen },
+                  }))
+                }
+                onChangeDailyLimit={(id, next) =>
+                  setCardControls((prev) => ({
+                    ...prev,
+                    [id]: { ...prev[id], dailyLimitCents: next },
+                  }))
+                }
+              />
+              <PromoProgressCard
+                icon={<Sparkles className="w-4 h-4" />}
+                title="Laptop Fund"
+                description="Auto-roundups and monthly boosts bring your engineering laptop goal closer."
+                progressLeft="₹68,500 / ₹1,14,900"
+                progressRight="60%"
+                ratio={68500 / 114900}
+                onAction={() => {}}
+              />
+              <TealChallengeCard
+                title="Food & Chai Plan"
+                spentCents={148500}
+                limitCents={300000}
+                currency="INR"
+                streakTitle="Day 5 of 7"
+                ctaLabel="View Plan Details"
+                onCtaClick={() => {}}
+              />
+              <ChatComposer
+                value={chatInput}
+                onChange={setChatInput}
+                onSubmit={() => setChatInput('')}
+                credits={76}
+              />
+            </div>
+          </>
+        )}
       </div>
-    </div>
+    </PageShell>
   );
 };

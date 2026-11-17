@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import type {
@@ -19,7 +19,7 @@ import {
 import { TRANSLATIONS } from './shared/i18n';
 import { SPRING_BOUNCY } from './shared/motion';
 import { MintlyStoreProvider, useMintlyStore } from './lib/store';
-import { loadLocalWorkspace, saveLocalWorkspace } from './lib/storage';
+import { loadLocalWorkspace, resetLocalWorkspace, saveLocalWorkspace } from './lib/storage';
 import {
   auth,
   loadOrSeedFirestoreWorkspace,
@@ -40,6 +40,7 @@ import {
 } from './components/SuccessCelebration';
 import { BrandStudioPage } from './components/brand/BrandStudioPage';
 import { StyleGuidePage } from './components/StyleGuidePage';
+import { PageShell } from './components/ui';
 import { FloatingBottomNav, type NavTabKey } from './components/ui/FloatingBottomNav';
 import { OnboardingModal } from './components/OnboardingModal';
 
@@ -65,6 +66,7 @@ function MintlyApp() {
   const [authEmail, setAuthEmail] = useState<string | null>(null);
   const [authUid, setAuthUid] = useState<string | null>(null);
   const [cloudBusy, setCloudBusy] = useState(false);
+  const [isImportingBatch, setIsImportingBatch] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [celebration, setCelebration] = useState<SuccessCelebrationData | null>(null);
   const [recentMilestoneTitle, setRecentMilestoneTitle] = useState<string | null>(null);
@@ -106,22 +108,29 @@ function MintlyApp() {
     dispatch({ type: 'SET_ACCOUNT_LIMIT', accountId, dailyLimitCents: nextLimitCents });
   };
 
+  const cloudHydratedRef = useRef(false);
+  const lastSyncedSnapshotRef = useRef<string>('');
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
       if (!user) {
+        cloudHydratedRef.current = false;
         setAuthUid(null);
         setAuthEmail(null);
         return;
       }
-      setAuthUid(user.uid);
       setAuthEmail(user.email || user.displayName || 'Connected');
       setCloudBusy(true);
       try {
         const synced = await loadOrSeedFirestoreWorkspace(user.uid, loadLocalWorkspace());
+        lastSyncedSnapshotRef.current = JSON.stringify(synced);
         dispatch({ type: 'HYDRATE', payload: synced });
         saveLocalWorkspace(synced);
+        cloudHydratedRef.current = true;
+        setAuthUid(user.uid);
       } catch (err) {
-        console.error('Firestore workspace load failed:', err);
+        console.warn('Firestore workspace load skipped:', err);
+        cloudHydratedRef.current = false;
       } finally {
         setCloudBusy(false);
       }
@@ -130,10 +139,18 @@ function MintlyApp() {
   }, [dispatch]);
 
   useEffect(() => {
-    if (!authUid) return;
-    void persistFullWorkspaceToFirestore(authUid, workspace).catch((err) => {
-      console.error('Background Firestore sync failed:', err);
-    });
+    if (!authUid || !cloudHydratedRef.current) return;
+    const serialized = JSON.stringify(workspace);
+    if (serialized === lastSyncedSnapshotRef.current) return;
+
+    const timer = window.setTimeout(() => {
+      lastSyncedSnapshotRef.current = serialized;
+      void persistFullWorkspaceToFirestore(authUid, workspace).catch((err) => {
+        console.warn('Background Firestore sync skipped:', err);
+      });
+    }, 2500);
+
+    return () => window.clearTimeout(timer);
   }, [authUid, workspace]);
 
   useEffect(() => {
@@ -195,6 +212,11 @@ function MintlyApp() {
   const handleChangeCategory = (txId: string, category: SpendingCategory) => {
     dispatch({ type: 'UPDATE_TRANSACTION_CATEGORY', txId, category });
     showToast(`Category updated to ${t.categories[category]}`);
+  };
+
+  const handleUpdateTransactionNote = (txId: string, note: string) => {
+    dispatch({ type: 'UPDATE_TRANSACTION_NOTE', txId, note });
+    showToast(note.trim() ? 'Note saved' : 'Note cleared');
   };
 
   const handleContributeVault = (vaultId: string, amountCents: number, note: string) => {
@@ -304,27 +326,32 @@ function MintlyApp() {
   const handleImportBatch = async (
     rawText: string
   ): Promise<{ addedCount: number; duplicateCount: number; parserUsed?: string }> => {
-    const response = await fetch('/api/v1/import', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ownerId: workspace.profile.uid,
-        accountId: workspace.accounts[0]?.id || 'acc_bank',
-        existing: workspace.transactions,
-        rawText,
-      }),
-    });
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error || 'Import failed');
-    }
+    setIsImportingBatch(true);
+    try {
+      const response = await fetch('/api/v1/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ownerId: workspace.profile.uid,
+          accountId: workspace.accounts[0]?.id || 'acc_bank',
+          existing: workspace.transactions,
+          rawText,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Import failed');
+      }
 
-    dispatch({ type: 'IMPORT_TRANSACTIONS', transactions: data.merged });
-    return {
-      addedCount: data.addedCount,
-      duplicateCount: data.duplicateCount,
-      parserUsed: data.parserUsed,
-    };
+      dispatch({ type: 'IMPORT_TRANSACTIONS', transactions: data.merged });
+      return {
+        addedCount: data.addedCount,
+        duplicateCount: data.duplicateCount,
+        parserUsed: data.parserUsed,
+      };
+    } finally {
+      setIsImportingBatch(false);
+    }
   };
 
   const handleUpdateSettings = (patch: {
@@ -400,7 +427,7 @@ function MintlyApp() {
     );
   }
 
-  if (pathname === '/style-guide') {
+  if (pathname === '/styleguide' || pathname === '/style-guide') {
     return (
       <MotionConfig reducedMotion="user">
         <StyleGuidePage onBackToApp={() => navigateRoute('/')} />
@@ -410,21 +437,9 @@ function MintlyApp() {
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="min-h-screen relative overflow-x-clip text-[#0E2B2B] flex flex-col">
-        {/* Full-screen slowly drifting soft mesh gradient + grain overlay */}
-        <div
-          aria-hidden="true"
-          className="fixed inset-0 -z-20 mintly-atmosphere-bg mintly-atmosphere-drift pointer-events-none"
-        />
-        <div
-          aria-hidden="true"
-          className="fixed inset-0 -z-10 mintly-grain-overlay pointer-events-none"
-        />
-
-        {/* Centered Phone-Width Column (390px-430px) */}
-        <main className="flex-1 w-full max-w-[430px] mx-auto px-5 pt-4 pb-28">
-          <AnimatePresence mode="wait">
-            {activeTab === 'home' && (
+      <PageShell>
+        <AnimatePresence mode="wait">
+          {activeTab === 'home' && (
               <motion.div
                 key="tab-home"
                 initial={{ opacity: 0, y: 10 }}
@@ -468,15 +483,20 @@ function MintlyApp() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -6 }}
                 transition={{ duration: 0.18 }}
-                className="rounded-[28px] bg-[#0B3B3A] p-4 text-white shadow-[var(--shadow-teal)]"
               >
                 <ActivityView
                   workspace={workspace}
+                  runway={runway}
+                  budgets={budgets}
+                  monthlyReport={monthlyReport}
+                  isImporting={isImportingBatch}
                   t={t}
                   onOpenImport={() => setSheet({ kind: 'import' })}
                   onOpenReport={() => setSheet({ kind: 'report' })}
+                  onOpenSettings={() => setSheet({ kind: 'settings' })}
                   onReverseTransaction={handleReverseTransaction}
                   onChangeCategory={handleChangeCategory}
+                  onUpdateNote={handleUpdateTransactionNote}
                   onSplitTransaction={(tx) =>
                     setSheet({
                       kind: 'split',
@@ -496,13 +516,14 @@ function MintlyApp() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -6 }}
                 transition={{ duration: 0.18 }}
-                className="rounded-[28px] bg-[#0B3B3A] p-4 text-white shadow-[var(--shadow-teal)]"
               >
                 <PlansView
                   workspace={workspace}
+                  runway={runway}
                   budgets={budgets}
                   nudges={nudges}
                   t={t}
+                  onOpenSettings={() => setSheet({ kind: 'settings' })}
                   onContributeVault={(vaultId) => setSheet({ kind: 'vault', vaultId })}
                   onToggleRoundUps={handleToggleRoundUps}
                   onHandleNudge={handleNudgeAction}
@@ -517,7 +538,6 @@ function MintlyApp() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -6 }}
                 transition={{ duration: 0.18 }}
-                className="rounded-[28px] bg-[#0B3B3A] p-4 text-white shadow-[var(--shadow-teal)]"
               >
                 <CirclesView
                   workspace={workspace}
@@ -526,6 +546,7 @@ function MintlyApp() {
                   onSettleTransfer={(circleId: string, transfer: CircleDebtTransfer) =>
                     setSheet({ kind: 'settle', circleId, transfer })
                   }
+                  onOpenSettings={() => setSheet({ kind: 'settings' })}
                 />
               </motion.div>
             )}
@@ -550,7 +571,7 @@ function MintlyApp() {
               </motion.div>
             )}
           </AnimatePresence>
-        </main>
+      </PageShell>
 
         {/* Floating Frosted Bottom Navigation */}
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-32px)] max-w-[398px] flex justify-center pointer-events-none">
@@ -618,7 +639,7 @@ function MintlyApp() {
             resetDemoData();
             showToast('Demo data reset');
           }}
-          onOpenStyleGuide={() => navigateRoute('/style-guide')}
+          onOpenStyleGuide={() => navigateRoute('/styleguide')}
           onOpenBrandStudio={() => navigateRoute('/brand')}
         />
 
@@ -636,15 +657,86 @@ function MintlyApp() {
             setOnboardingOpen(false);
           }}
         />
-      </div>
     </MotionConfig>
   );
 }
 
+interface AppErrorBoundaryState {
+  hasError: boolean;
+  message: string;
+}
+
+class AppErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  AppErrorBoundaryState
+> {
+  state: AppErrorBoundaryState = { hasError: false, message: '' };
+
+  static getDerivedStateFromError(error: unknown): AppErrorBoundaryState {
+    return {
+      hasError: true,
+      message: error instanceof Error ? error.message : 'Unexpected render error',
+    };
+  }
+
+  componentDidCatch(error: unknown) {
+    console.error('Mintly render recovery triggered:', error);
+  }
+
+  render() {
+    if (!this.state.hasError) {
+      return this.props.children;
+    }
+    return (
+      <div className="min-h-screen mintly-atmosphere-bg flex items-center justify-center p-6 text-[#0E2B2B]">
+        <div className="w-full max-w-[380px] rounded-[24px] bg-white p-6 shadow-[var(--shadow-card)] space-y-4">
+          <div className="space-y-1">
+            <p className="text-xs font-medium uppercase tracking-wider text-[#6B7F7C]">
+              Mintly Recovery
+            </p>
+            <h1 className="font-display text-xl font-medium text-[#0E2B2B]">
+              Restoring your workspace
+            </h1>
+            <p className="text-sm text-[#6B7F7C]">
+              A cached record needed refreshing. Reload to continue safely.
+            </p>
+          </div>
+          {this.state.message && (
+            <p className="rounded-xl bg-[#F4F7F4] px-3 py-2 text-xs font-mono text-[#6B7F7C] break-words">
+              {this.state.message}
+            </p>
+          )}
+          <div className="flex flex-col gap-2.5">
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="min-h-[44px] w-full rounded-full bg-[#0B3B3A] text-white text-sm font-medium cursor-pointer"
+            >
+              Reload Mintly
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                resetLocalWorkspace();
+                window.location.reload();
+              }}
+              className="min-h-[44px] w-full rounded-full bg-[#F4F7F4] text-[#0E2B2B] text-sm font-medium border border-[#0E2B2B]/10 cursor-pointer"
+            >
+              Reset Demo Data & Reload
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+}
+
 export default function App() {
   return (
-    <MintlyStoreProvider>
-      <MintlyApp />
-    </MintlyStoreProvider>
+    <AppErrorBoundary>
+      <MintlyStoreProvider>
+        <MintlyApp />
+      </MintlyStoreProvider>
+    </AppErrorBoundary>
   );
 }

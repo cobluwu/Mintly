@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   --font-display: "Instrument Sans", system-ui, -apple-system, sans-serif;
@@ -13,13 +14,24 @@
   --teal-800: #14504D;
   --sage-300: #A9D6B8;
   --sage-100: #DDEFE3;
+  --sage-track: #ECEFED;
+  --surface-l2: #FFFFFF;
+  --surface-subtle: #F4F7F4;
+  --surface-tint: #F4F7F4;
+  --surface-track: #ECEFED;
+  --surface-sheet: #F8FAF8;
+  --hairline-soft: rgba(14, 43, 43, 0.06);
   --cream: #F3EFDC;
-  --white-glass: rgba(255, 255, 255, 0.58);
+  --white-glass: rgba(255, 255, 255, 0.55);
   --white-glass-strong: rgba(255, 255, 255, 0.78);
-  --white-border: rgba(255, 255, 255, 0.52);
+  --white-border: rgba(255, 255, 255, 0.5);
   --muted: #6B7F7C;
   --amber: #E8B64C;
+  --amber-ink: #7A5912;
+  --amber-tint: #F3EFDC;
   --coral: #E26D5C;
+  --coral-ink: #9B2F21;
+  --coral-tint: #F8E3DF;
 
   /* Compatibility mappings for existing SVG brand tokens */
   --mintly-lime: #A9D6B8;
@@ -29,23 +41,35 @@
   --mintly-lilac: #8EA8B8;
   --mintly-sky: #6BB4B2;
 
-  /* Radii & Shadows */
+  /* Radii & Spacing Tokens */
+  --radius-row: 16px;
   --radius-card: 24px;
   --radius-hero: 28px;
   --radius-shell: 30px;
   --radius-pill: 9999px;
   --blur-glass: 24px;
 
-  --shadow-glass: 0 20px 48px -22px rgba(14, 43, 43, 0.14), 0 4px 14px -4px rgba(14, 43, 43, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.72);
-  --shadow-card: 0 16px 38px -20px rgba(14, 43, 43, 0.12), 0 2px 8px -2px rgba(14, 43, 43, 0.04);
-  --shadow-teal: 0 24px 48px -18px rgba(11, 59, 58, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.14);
-  --shadow-nav: 0 18px 42px -12px rgba(14, 43, 43, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  /* 4-Level Elevation Shadows */
+  --shadow-glass:
+    0 20px 48px -22px rgba(14, 43, 43, 0.14),
+    0 4px 14px -4px rgba(14, 43, 43, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  --shadow-card:
+    0 16px 38px -20px rgba(14, 43, 43, 0.12),
+    0 2px 8px -2px rgba(14, 43, 43, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  --shadow-teal:
+    0 24px 48px -18px rgba(11, 59, 58, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  --shadow-nav:
+    0 18px 42px -12px rgba(14, 43, 43, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
 }
 
 @layer base {
   html {
     font-family: var(--font-sans);
-    background-color: #F4F7F4;
+    background-color: var(--surface-subtle);
     color: var(--ink);
     -webkit-tap-highlight-color: transparent;
   }
@@ -60,7 +84,7 @@
   }
 }
 
-/* Soft Atmospheric Drifting Mesh Gradient + Grain Overlay */
+/* Soft Atmospheric Drifting Mesh Gradient + Grain Overlay (L0) */
 @keyframes mintly-mesh-drift {
   0%, 100% {
     transform: translate3d(0, 0, 0) scale(1);
@@ -88,7 +112,8 @@
   mix-blend-mode: multiply;
 }
 
-/* Reusable Glass & Editorial Surface Primitives */
+/* L1: Frosted Glass Surface */
+.mintly-elevation-l1,
 .mintly-glass-shell {
   background: var(--white-glass);
   backdrop-filter: blur(var(--blur-glass));
@@ -97,12 +122,16 @@
   box-shadow: var(--shadow-glass);
 }
 
+/* L2: Solid White Card (24px radius, subtle top highlight, layered soft shadow) */
+.mintly-elevation-l2,
 .mintly-white-card {
   background: #FFFFFF;
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
 }
 
+/* L3: Deep Teal Feature Card (28px radius, inner highlight, soft shadow) */
+.mintly-elevation-l3,
 .mintly-teal-card {
   background: linear-gradient(155deg, #0E4442 0%, #0B3B3A 48%, #072928 100%);
   border-radius: var(--radius-hero);
@@ -112,6 +141,35 @@
 .mintly-card-dot-grid {
   background-image: radial-gradient(rgba(169, 214, 184, 0.24) 1px, transparent 1px);
   background-size: 7px 7px;
+}
+
+@keyframes mintly-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.mintly-skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  background-color: rgba(14, 43, 43, 0.06);
+}
+
+.mintly-skeleton-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.65) 50%,
+    transparent 100%
+  );
+  animation: mintly-shimmer 1.6s ease-in-out infinite;
 }
 
 .mintly-no-scrollbar {

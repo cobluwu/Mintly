@@ -1,6 +1,6 @@
 import React from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { SPRING_BOUNCY, triggerHaptic } from '../../shared/motion';
+import { motion } from 'motion/react';
+import { triggerHaptic } from '../../shared/motion';
 
 export type NavTabKey = 'home' | 'activity' | 'plans' | 'circles' | 'coach';
 
@@ -82,51 +82,55 @@ export const FloatingBottomNav: React.FC<FloatingBottomNavProps> = ({
   return (
     <nav
       aria-label="Primary navigation"
-      className="pointer-events-auto inline-flex items-center justify-between gap-1.5 w-full max-w-[390px] p-1.5 rounded-full bg-[#0E2B2B]/[0.18] backdrop-blur-2xl border border-white/45 shadow-[0_20px_44px_-14px_rgba(14,43,43,0.28),inset_0_1px_0_rgba(255,255,255,0.5)]"
+      className="pointer-events-auto flex items-center justify-evenly gap-1 w-full max-w-[390px] p-1.5 rounded-full bg-[#0E2B2B]/[0.18] backdrop-blur-2xl border border-white/45 shadow-[0_20px_44px_-14px_rgba(14,43,43,0.28),inset_0_1px_0_rgba(255,255,255,0.5)]"
     >
       {TAB_ORDER.map((tab) => {
         const active = activeTab === tab;
-        const label = tab === 'coach' ? `Ask ${labels[tab]}` : labels[tab];
+        const isCoach = tab === 'coach';
+        const label = isCoach ? `Ask ${labels[tab]}` : labels[tab];
 
         return (
           <motion.button
             key={tab}
             type="button"
-            layout
-            whileTap={{ scale: 0.94 }}
-            transition={SPRING_BOUNCY}
+            whileTap={{ scale: 0.96 }}
+            transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
             onClick={() => {
               triggerHaptic(8);
               onSelectTab(tab);
             }}
             aria-label={labels[tab]}
             aria-current={active ? 'page' : undefined}
-            className={`relative min-h-[44px] h-11 rounded-full flex items-center justify-center cursor-pointer focus-visible:outline-2 focus-visible:outline-[#0B3B3A] ${
+            className={`relative min-h-[44px] min-w-[44px] h-11 px-1 rounded-full flex items-center justify-center shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#0B3B3A] transition-colors duration-150 ${
               active
-                ? 'pl-4 pr-1 bg-white/35 border border-white/60 shadow-[0_8px_24px_-6px_rgba(255,255,255,0.65)] gap-2.5'
-                : 'w-11 bg-white/15 hover:bg-white/28 border border-white/20 shrink-0'
+                ? 'bg-white/38 border border-white/65 shadow-[0_8px_24px_-6px_rgba(255,255,255,0.65)]'
+                : 'bg-white/15 hover:bg-white/28 border border-white/20'
             }`}
           >
-            <AnimatePresence initial={false} mode="popLayout">
-              {active && (
-                <motion.span
-                  key={`label-${tab}`}
-                  initial={{ opacity: 0, width: 0 }}
-                  animate={{ opacity: 1, width: 'auto' }}
-                  exit={{ opacity: 0, width: 0 }}
-                  transition={SPRING_BOUNCY}
-                  className="text-[13px] font-medium text-[#0E2B2B] whitespace-nowrap overflow-hidden"
-                >
-                  {label}
-                </motion.span>
-              )}
-            </AnimatePresence>
+            <motion.span
+              aria-hidden={!active}
+              initial={false}
+              animate={{
+                width: active ? 'auto' : 0,
+                opacity: active ? 1 : 0,
+              }}
+              transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+              className="inline-flex items-center overflow-hidden shrink-0"
+            >
+              <span
+                className={`whitespace-nowrap font-medium text-[#0E2B2B] select-none ${
+                  isCoach ? 'pl-2 pr-1.5 text-[12.5px]' : 'pl-2.5 pr-1.5 text-[13px]'
+                }`}
+              >
+                {label}
+              </span>
+            </motion.span>
 
             <span
-              className={`flex items-center justify-center rounded-full shrink-0 transition-all ${
+              className={`flex items-center justify-center w-9 h-9 rounded-full shrink-0 transition-colors duration-150 ${
                 active
-                  ? 'w-9 h-9 bg-white shadow-[0_4px_16px_rgba(255,255,255,0.9),0_4px_12px_rgba(14,43,43,0.12)]'
-                  : 'w-9 h-9'
+                  ? 'bg-white shadow-[0_4px_16px_rgba(255,255,255,0.9),0_4px_12px_rgba(14,43,43,0.12)]'
+                  : ''
               }`}
             >
               <NavLineIcon tab={tab} active={active} />

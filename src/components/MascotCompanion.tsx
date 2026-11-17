@@ -16,10 +16,10 @@ interface MascotCompanionProps {
 }
 
 const MOOD_ACCENT: Record<MascotMood, string> = {
-  happy: 'border-[#B9FF4B]/30',
-  celebrate: 'border-[#FFD166]/45',
-  caution: 'border-[#FF6B6B]/45',
-  coach: 'border-[#A78BFA]/45',
+  happy: 'border-[var(--sage-300)]/60',
+  celebrate: 'border-[var(--amber)]/65',
+  caution: 'border-[var(--coral)]/65',
+  coach: 'border-[var(--teal-800)]/45',
 };
 
 export const MascotCompanion: React.FC<MascotCompanionProps> = ({
@@ -60,7 +60,7 @@ export const MascotCompanion: React.FC<MascotCompanionProps> = ({
         }}
         transition={{ duration: 0.35, ease: 'easeOut' }}
         style={{ width: size, height: size }}
-        className={`relative shrink-0 rounded-2xl overflow-hidden bg-[#11141B] border ${MOOD_ACCENT[mood]} focus-visible:outline-2 focus-visible:outline-[#B9FF4B] cursor-pointer flex items-center justify-center`}
+        className={`relative shrink-0 rounded-2xl overflow-hidden bg-white/80 dark:bg-[var(--teal-900)] border ${MOOD_ACCENT[mood]} focus-visible:outline-2 focus-visible:outline-[var(--teal-900)] cursor-pointer flex items-center justify-center shadow-sm`}
       >
         <Lottie
           key={mood}
@@ -74,9 +74,9 @@ export const MascotCompanion: React.FC<MascotCompanionProps> = ({
 
       {(message || triggerLabel) && (
         <div className="min-w-0">
-          {message && <p className="text-sm text-[#C7D0DC] leading-snug">{message}</p>}
+          {message && <p className="text-sm text-[var(--ink)] leading-snug">{message}</p>}
           {triggerLabel && (
-            <p className="text-[11px] font-mono text-[#94A3B8] mt-0.5 truncate">
+            <p className="text-[11px] font-mono text-[var(--muted)] mt-0.5 truncate">
               {triggerLabel}
             </p>
           )}

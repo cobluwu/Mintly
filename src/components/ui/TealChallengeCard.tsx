@@ -5,6 +5,8 @@ import type { CurrencyCode } from '../../shared/types';
 import { fmtINR } from '../../shared/finance';
 import { SPRING_BOUNCY, triggerHaptic } from '../../shared/motion';
 import { EditorialAmount } from './EditorialAmount';
+import { TealFeatureCard } from './Surfaces';
+import { Pill } from './Pill';
 
 interface StreakDay {
   label: string;
@@ -55,15 +57,9 @@ export const TealChallengeCard: React.FC<TealChallengeCardProps> = ({
   const pinLeftPercent = Math.max(8, Math.min(94, Math.round(ratio * 100)));
 
   return (
-    <article className="mintly-teal-card p-5 text-white space-y-5 relative overflow-hidden">
-      {/* Subtle deep-teal atmospheric highlight */}
-      <div
-        aria-hidden="true"
-        className="absolute -top-24 -right-20 w-56 h-56 rounded-full bg-[#A9D6B8]/10 blur-3xl pointer-events-none"
-      />
-
+    <TealFeatureCard className="space-y-5">
       {/* Top Row: Title + Circular Outlined Button */}
-      <div className="relative flex items-center justify-between gap-3">
+      <div className="flex items-center justify-between gap-3">
         <p className="text-[13px] font-medium text-white/80">{title}</p>
 
         <motion.button
@@ -93,7 +89,7 @@ export const TealChallengeCard: React.FC<TealChallengeCardProps> = ({
       </div>
 
       {/* Hero Spent Readout */}
-      <div className="relative space-y-1">
+      <div className="space-y-1">
         <EditorialAmount
           valueCents={spentCents}
           currency={currency}
@@ -109,9 +105,8 @@ export const TealChallengeCard: React.FC<TealChallengeCardProps> = ({
       </div>
 
       {/* Segmented Block Bar with Marker Pin */}
-      <div className="relative pt-4 pb-1 space-y-2.5">
+      <div className="pt-4 pb-1 space-y-2.5">
         <div className="relative">
-          {/* Position Pin */}
           <motion.div
             initial={{ left: '8%' }}
             animate={{ left: `${pinLeftPercent}%` }}
@@ -123,7 +118,6 @@ export const TealChallengeCard: React.FC<TealChallengeCardProps> = ({
             <span className="w-[2px] h-11 bg-white rounded-full" />
           </motion.div>
 
-          {/* Continuous Track + Glowing Gradient Ending at Pin + Segment Dividers */}
           <div className="relative h-8 rounded-lg overflow-hidden bg-white/[0.08]">
             <motion.div
               initial={{ width: '8%' }}
@@ -158,19 +152,19 @@ export const TealChallengeCard: React.FC<TealChallengeCardProps> = ({
       </div>
 
       {/* Nested White Streak Mini Card */}
-      <div className="bg-white rounded-[20px] p-4 text-[#0E2B2B] space-y-3 shadow-[0_10px_24px_-12px_rgba(0,0,0,0.35)]">
-        <p className="text-center text-[13px] font-medium text-[#0E2B2B]">
+      <div className="bg-white dark:bg-[var(--surface-l2)] rounded-[20px] p-4 text-[var(--ink)] space-y-3 shadow-[0_10px_24px_-12px_rgba(0,0,0,0.35)]">
+        <p className="text-center text-[13px] font-medium text-[var(--ink)]">
           {streakTitle}
         </p>
         <div className="grid grid-cols-7 gap-1.5 text-center">
           {days.map((d, i) => (
             <div key={`${d.label}-${i}`} className="flex flex-col items-center gap-1.5">
-              <span className="text-[11px] font-medium text-[#6B7F7C]">{d.label}</span>
+              <span className="text-[11px] font-medium text-[var(--muted)]">{d.label}</span>
               <span
                 className={`w-7 h-7 rounded-full flex items-center justify-center ${
                   d.completed
-                    ? 'bg-[#A9D6B8] text-[#0E2B2B]'
-                    : 'bg-[#E8ECE9] text-transparent'
+                    ? 'bg-[var(--sage-300)] text-[var(--ink)]'
+                    : 'bg-[#E8ECE9] dark:bg-white/10 text-transparent'
                 }`}
               >
                 {d.completed && <Check className="w-3.5 h-3.5 stroke-[2.5]" />}
@@ -181,18 +175,15 @@ export const TealChallengeCard: React.FC<TealChallengeCardProps> = ({
       </div>
 
       {/* Full-width Sage Pill CTA */}
-      <motion.button
-        type="button"
-        whileTap={{ scale: 0.97 }}
-        transition={SPRING_BOUNCY}
-        onClick={() => {
-          triggerHaptic(10);
-          onCtaClick();
-        }}
-        className="w-full min-h-[48px] rounded-full bg-[#A9D6B8] hover:bg-[#99CCA9] text-[#0E2B2B] text-sm font-medium cursor-pointer transition-colors"
+      <Pill
+        variant="sage"
+        size="md"
+        fullWidth
+        onClick={onCtaClick}
+        className="min-h-[48px] text-sm"
       >
         {ctaLabel}
-      </motion.button>
-    </article>
+      </Pill>
+    </TealFeatureCard>
   );
 };

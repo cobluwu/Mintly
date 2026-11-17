@@ -40,19 +40,19 @@ function hexToRgbNorm(hex: string): [number, number, number, number] {
  */
 export function buildMochiLottieData(mood: MascotMood): Record<string, unknown> {
   const bodyColor = hexToRgbNorm('#74E3B1');
-  const leafColor = hexToRgbNorm('#B9FF4B');
-  const leafDark = hexToRgbNorm('#96DF2C');
-  const eyeColor = hexToRgbNorm('#181B20');
-  const blushColor = hexToRgbNorm('#FF8A8A');
+  const leafColor = hexToRgbNorm('#A9D6B8');
+  const leafDark = hexToRgbNorm('#6DC397');
+  const eyeColor = hexToRgbNorm('#0E2B2B');
+  const blushColor = hexToRgbNorm('#E26D5C');
   const glowColor =
     mood === 'celebrate'
-      ? hexToRgbNorm('#FFD166')
+      ? hexToRgbNorm('#E8B64C')
       : mood === 'caution'
-        ? hexToRgbNorm('#FF6B6B')
+        ? hexToRgbNorm('#E26D5C')
         : mood === 'coach'
-          ? hexToRgbNorm('#A78BFA')
-          : hexToRgbNorm('#B9FF4B');
-  const darkMetal = hexToRgbNorm('#232833');
+          ? hexToRgbNorm('#6BB4B2')
+          : hexToRgbNorm('#A9D6B8');
+  const darkMetal = hexToRgbNorm('#0B3B3A');
 
   // Mood-specific motion curves (120 frames @ 60fps = 2.0s seamless loop)
   const bodyPosKeyframes =

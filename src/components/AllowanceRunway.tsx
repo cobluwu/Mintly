@@ -5,6 +5,7 @@ import type { AllowanceRunwaySummary, CurrencyCode, RecurringRule, RunwayPace } 
 import { fmtINR, formatDateDDMMM } from '../shared/finance';
 import { SPRING_BOUNCY, SPRING_GENTLE, triggerHaptic } from '../shared/motion';
 import { EditorialAmount } from './ui/EditorialAmount';
+import { WhiteCard } from './ui/Surfaces';
 import type { TranslationBundle } from '../shared/i18n';
 
 interface AllowanceRunwayProps {
@@ -60,13 +61,13 @@ export const AllowanceRunway: React.FC<AllowanceRunwayProps> = ({
   const upcomingExpenses = recurring.filter((r) => r.active && r.type === 'expense');
 
   return (
-    <section
-      aria-label={t.home.runwayTitle}
-      className="mintly-white-card p-5 flex flex-col justify-between space-y-4"
+    <WhiteCard
+      ariaLabel={t.home.runwayTitle}
+      className="flex flex-col justify-between space-y-4"
     >
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="font-display text-lg font-medium tracking-[-0.02em] text-[#0E2B2B]">
+          <h2 className="font-display text-lg font-medium tracking-[-0.02em] text-[var(--ink)]">
             {t.home.runwayTitle}
           </h2>
           <p className="text-xs text-[#6B7F7C] mt-0.5 truncate">
@@ -211,6 +212,6 @@ export const AllowanceRunway: React.FC<AllowanceRunwayProps> = ({
           </AnimatePresence>
         </div>
       )}
-    </section>
+    </WhiteCard>
   );
 };
